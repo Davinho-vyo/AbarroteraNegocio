@@ -1,4 +1,533 @@
-<!DOCTYPE html>
+{/* Botón para limpiar datos (oculto normalmente) */}
+                            <button
+                                onClick={limpiarTodosLosDatos}
+                                className="mt-3 text-xs text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                                🗑️ Limpiar todos los datos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Pantalla de Ventas
+            const VentasScreen = () => (
+                <div className="min-h-screen bg-green-50 p-4">
+                    <div className="max-w-md mx-auto">
+                        <HeaderNav title="🛒 Registrar Venta" onBack={() => setCurrentView('main')} />
+
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                <label className="text-xl font-bold text-gray-800 mb-4 block">¿Qué vendiste?</label>
+                                <select
+                                    value={ventaActual.producto}
+                                    onChange={(e) => {
+                                        const producto = inventario.find(p => p.id === parseInt(e.target.value));
+                                        setVentaActual({
+                                            ...ventaActual,
+                                            producto: e.target.value,
+                                            precio: producto ? producto.precio : 0
+                                        });
+                                    }}
+                                    className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl focus:border-green-500"
+                                >
+                                    <option value="">Selecciona un producto</option>
+                                    {inventario.filter(p => p.cantidad > 0).map(producto => (
+                                        <option key={producto.id} value={producto.id}>
+                                            {producto.nombre} - ${producto.precio} (Stock: {producto.cantidad})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                <label className="text-xl font-bold text-gray-800 mb-4 block">¿Cuántos vendiste?</label>
+                                <div className="flex items-center justify-center space-x-4">
+                                    <button
+                                        onClick={() => setVentaActual({...ventaActual, cantidad: Math.max(1, ventaActual.cantidad - 1)})}
+                                        className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full text-2xl"
+                                    >
+                                        -
+                                    </button>
+                                    <span className="text-4xl font-bold text-gray-800 w-20 text-center">{ventaActual.cantidad}</span>
+                                    <button
+                                        onClick={() => {
+                                            const producto = inventario.find(p => p.id === parseInt(ventaActual.producto));
+                                            const maxCantidad = producto ? producto.cantidad : 1;
+                                            setVentaActual({
+                                                ...ventaActual, 
+                                                cantidad: Math.min(maxCantidad, ventaActual.cantidad + 1)
+                                            });
+                                        }}
+                                        className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full text-2xl"
+                                        disabled={(() => {
+                                            const producto = inventario.find(p => p.id === parseInt(ventaActual.producto));
+                                            return ventaActual.cantidad >= (producto?.cantidad || 0);
+                                        })()}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                
+                                {ventaActual.producto && (
+                                    (() => {
+                                        const producto = inventario.find(p => p.id === parseInt(ventaActual.producto));
+                                        return producto && ventaActual.cantidad >= producto.cantidad ? (
+                                            <div className="mt-3 p-3 bg-red-100 rounded-lg">
+                                                <p className="text-red-800 text-sm font-semibold text-center">
+                                                    ⚠️ ¡No puedes vender más de lo que tienes en stock!
+                                                </p>
+                                            </div>
+                                        ) : null;
+                                    })()
+                                )}
+                            </div>
+
+                            <div className="bg-yellow-100 rounded-2xl p-6 shadow-lg">
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">Total de la venta:</h3>
+                                <p className="text-4xl font-bold text-green-600 mb-2">${(ventaActual.cantidad * ventaActual.precio).toFixed(2)}</p>
+                                {ventaActual.producto && (
+                                    <div className="text-sm text-gray-600">
+                                        <p>{ventaActual.cantidad} × ${ventaActual.precio} = ${(ventaActual.cantidad * ventaActual.precio).toFixed(2)}</p>
+                                        {(() => {
+                                            const producto = inventario.find(p => p.id === parseInt(ventaActual.producto));
+                                            const ganancia = producto ? (ventaActual.precio - producto.costo) * ventaActual.cantidad : 0;
+                                            return <p className="text-green-600 font-semibold">Ganancia: ${ganancia.toFixed(2)}</p>;
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    if (ventaActual.producto) {
+                                        const producto = inventario.find(p => p.id === parseInt(ventaActual.producto));
+                                        if (producto && ventaActual.cantidad <= producto.cantidad) {
+                                            const nuevaVenta = {
+                                                id: Date.now(),
+                                                producto: producto.nombre,
+                                                cantidad: ventaActual.cantidad,
+                                                precio: ventaActual.precio,
+                                                fecha: new Date().toISOString()
+                                            };
+                                            setVentas([...ventas, nuevaVenta]);
+                                            
+                                            // Actualizar inventario
+                                            setInventario(inventario.map(p => 
+                                                p.id === parseInt(ventaActual.producto) 
+                                                    ? {...p, cantidad: p.cantidad - ventaActual.cantidad}
+                                                    : p
+                                            ));
+                                            
+                                            setVentaActual({ producto: '', cantidad: 1, precio: 0 });
+                                            alert('¡Venta registrada con éxito! 🎉');
+                                        } else {
+                                            alert('❌ No tienes suficiente stock para esta venta');
+                                        }
+                                    }
+                                }}
+                                disabled={!ventaActual.producto || ventaActual.cantidad <= 0}
+                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white p-6 rounded-2xl shadow-xl text-2xl font-bold"
+                            >
+                                ✓ Registrar Venta
+                            </button>
+                        </div>
+
+                        <div className="mt-8 bg-white rounded-2xl p-4 shadow-lg">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">Ventas de Hoy ({ventas.length})</h3>
+                            {ventas.length === 0 ? (
+                                <p className="text-gray-600 text-center py-4">No hay ventas registradas hoy</p>
+                            ) : (
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {ventas.slice(-5).reverse().map(venta => (
+                                        <div key={venta.id} className="flex justify-between items-center p-3 border-b border-gray-100">
+                                            <div>
+                                                <span className="font-semibold">{venta.cantidad}x {venta.producto}</span>
+                                                <p className="text-xs text-gray-500">{new Date(venta.fecha).toLocaleTimeString('es-MX')}</p>
+                                            </div>
+                                            <span className="font-bold text-green-600">${(venta.cantidad * venta.precio).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                    {ventas.length > 5 && (
+                                        <p className="text-center text-sm text-gray-500 pt-2">
+                                            Mostrando las últimas 5 ventas de {ventas.length} totales
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Pantalla de Inventario
+            const InventarioScreen = () => (
+                <div className="min-h-screen bg-blue-50 p-4">
+                    <div className="max-w-md mx-auto">
+                        <HeaderNav 
+                            title="📦 Mi Inventario" 
+                            onBack={() => setCurrentView('main')}
+                        >
+                            <button
+                                onClick={() => setMostrarFormulario(true)}
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2"
+                            >
+                                <span>➕</span>
+                                <span>Nuevo</span>
+                            </button>
+                        </HeaderNav>
+
+                        <div className="space-y-4">
+                            {inventario.map(producto => {
+                                const dias = getDiasVencimiento(producto.vencimiento);
+                                const stockBajo = producto.cantidad <= producto.minimo;
+                                
+                                return (
+                                    <div key={producto.id} className="bg-white rounded-2xl p-4 shadow-lg">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h3 className="text-lg font-bold text-gray-800 flex-1">{producto.nombre}</h3>
+                                            <div className="flex flex-col items-end space-y-1">
+                                                <span className={`px-3 py-1 rounded-full text-sm font-bold ${getColorVencimiento(dias)}`}>
+                                                    {dias > 0 ? `${dias} días` : 'Vencido'}
+                                                </span>
+                                                {stockBajo && (
+                                                    <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                                                        ¡Stock bajo!
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-3 gap-4 text-center">
+                                            <div>
+                                                <p className="text-gray-600 text-sm">Cantidad</p>
+                                                <p className={`text-2xl font-bold ${stockBajo ? 'text-red-600' : 'text-blue-600'}`}>
+                                                    {producto.cantidad}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-600 text-sm">Precio</p>
+                                                <p className="text-2xl font-bold text-green-600">${producto.precio}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-600 text-sm">Ganancia</p>
+                                                <p className="text-xl font-bold text-purple-600">
+                                                    ${(producto.precio - producto.costo).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {dias <= 15 && dias > 0 && (
+                                            <div className="mt-3 p-3 bg-yellow-100 rounded-lg">
+                                                <p className="text-yellow-800 text-sm font-semibold">
+                                                    ⚠️ ¡Próximo a vencer! Considera hacer promoción 2×1 o descuento
+                                                </p>
+                                            </div>
+                                        )}
+                                        
+                                        {dias <= 0 && (
+                                            <div className="mt-3 p-3 bg-red-100 rounded-lg">
+                                                <p className="text-red-800 text-sm font-semibold">
+                                                    🚨 ¡Producto vencido! Retira inmediatamente de la venta
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {stockBajo && dias > 15 && (
+                                            <div className="mt-3 p-3 bg-orange-100 rounded-lg">
+                                                <p className="text-orange-800 text-sm font-semibold">
+                                                    📦 Stock bajo: Solo quedan {producto.cantidad} unidades. ¡Hora de reabastecer!
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {mostrarFormulario && (
+                            <FormularioProducto 
+                                onCerrar={() => setMostrarFormulario(false)}
+                                onGuardar={agregarProducto}
+                            />
+                        )}
+
+                        <div className="mt-6 bg-green-100 rounded-2xl p-4">
+                            <h3 className="font-bold text-green-800 mb-2">💡 Tip de Doña Carmen:</h3>
+                            <p className="text-green-700 text-sm">
+                                "Mija, revisa tu inventario todas las mañanas. Los productos frescos y bien organizados 
+                                atraen más clientes. ¡Y no olvides rotar tu mercancía!"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // Pantalla de Compras
+            const ComprasScreen = () => {
+                const productosPocos = inventario.filter(p => p.cantidad <= p.minimo);
+                const productosVencer = inventario.filter(p => getDiasVencimiento(p.vencimiento) <= 15 && getDiasVencimiento(p.vencimiento) > 0);
+                const productosAgotados = inventario.filter(p => p.cantidad === 0);
+
+                return (
+                    <div className="min-h-screen bg-purple-50 p-4">
+                        <div className="max-w-md mx-auto">
+                            <HeaderNav 
+                                title="📋 ¿Qué debo comprar?" 
+                                onBack={() => setCurrentView('main')}
+                            >
+                                <button
+                                    onClick={() => setMostrarFormulario(true)}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2"
+                                >
+                                    <span>➕</span>
+                                    <span>Nuevo</span>
+                                </button>
+                            </HeaderNav>
+
+                            <div className="space-y-6">
+                                {/* Productos agotados - Prioridad máxima */}
+                                {productosAgotados.length > 0 && (
+                                    <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-red-400">
+                                        <h3 className="text-xl font-bold text-red-600 mb-4 flex items-center">
+                                            🚨 URGENTE: Productos agotados
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {productosAgotados.map(producto => (
+                                                <div key={producto.id} className="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-200">
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800">{producto.nombre}</p>
+                                                        <p className="text-sm text-red-600 font-semibold">¡AGOTADO!</p>
+                                                    </div>
+                                                    <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                                                        COMPRAR YA
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                    <h3 className="text-xl font-bold text-orange-600 mb-4 flex items-center">
+                                        📦 Stock bajo
+                                    </h3>
+                                    {productosPocos.length === 0 ? (
+                                        <div className="text-center py-4">
+                                            <div className="text-4xl mb-2">✅</div>
+                                            <p className="text-green-600 font-semibold">¡Perfecto! Todos tus productos tienen buen stock</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {productosPocos.map(producto => (
+                                                <div key={producto.id} className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800">{producto.nombre}</p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Solo quedan {producto.cantidad} | Mínimo recomendado: {producto.minimo}
+                                                        </p>
+                                                    </div>
+                                                    <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                                        ¡Comprar!
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                    <h3 className="text-xl font-bold text-yellow-600 mb-4 flex items-center">
+                                        ⏰ Próximos a vencer
+                                    </h3>
+                                    {productosVencer.length === 0 ? (
+                                        <div className="text-center py-4">
+                                            <div className="text-4xl mb-2">✅</div>
+                                            <p className="text-green-600 font-semibold">¡Excelente! No tienes productos próximos a vencer</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {productosVencer.map(producto => (
+                                                <div key={producto.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800">{producto.nombre}</p>
+                                                        <p className="text-sm text-gray-600">Vence en {getDiasVencimiento(producto.vencimiento)} días</p>
+                                                    </div>
+                                                    <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                                        ¡Promoción!
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-blue-100 rounded-2xl p-6 shadow-lg">
+                                    <h3 className="text-lg font-bold text-blue-800 mb-3">📝 Lista de Compras Sugerida</h3>
+                                    <div className="space-y-2">
+                                        <p className="text-blue-700 font-semibold">Productos básicos recomendados:</p>
+                                        <ul className="text-blue-600 text-sm space-y-1 ml-4">
+                                            <li>• Refrescos (Coca-Cola, Pepsi)</li>
+                                            <li>• Pan de caja y dulces</li>
+                                            <li>• Leche y huevos</li>
+                                            <li>• Botanas (Sabritas, Doritos)</li>
+                                            <li>• Productos de limpieza básicos</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="bg-green-100 rounded-2xl p-6 shadow-lg">
+                                    <h3 className="text-lg font-bold text-green-800 mb-2">💡 Consejo de Doña Carmen:</h3>
+                                    <p className="text-green-700">
+                                        "Mija, siempre compra un poquito más de lo que crees que necesitas. 
+                                        Es mejor tener de sobra que quedarse sin vender. ¡Y no olvides negociar 
+                                        mejores precios cuando compres por mayoreo!"
+                                    </p>
+                                </div>
+                            </div>
+
+                            {mostrarFormulario && (
+                                <FormularioProducto 
+                                    onCerrar={() => setMostrarFormulario(false)}
+                                    onGuardar={agregarProducto}
+                                />
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Pantalla de Dinero
+            const DineroScreen = () => (
+                <div className="min-h-screen bg-yellow-50 p-4">
+                    <div className="max-w-md mx-auto">
+                        <HeaderNav title="💰 Mi Dinero del Día" onBack={() => setCurrentView('main')} />
+
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Resumen de Hoy</h3>
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                                        <p className="text-sm text-gray-600">Total Vendido</p>
+                                        <p className="text-2xl font-bold text-green-600">${totalVentasHoy.toFixed(2)}</p>
+                                    </div>
+                                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                                        <p className="text-sm text-gray-600">Ganancias</p>
+                                        <p className="text-2xl font-bold text-blue-600">${gananciasHoy.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                                        <p className="text-sm text-gray-600">Ventas</p>
+                                        <p className="text-xl font-semibold text-purple-600">{ventas.length}</p>
+                                    </div>
+                                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                                        <p className="text-sm text-gray-600">Margen Promedio</p>
+                                        <p className="text-xl font-semibold text-orange-600">
+                                            {totalVentasHoy > 0 ? `${((gananciasHoy / totalVentasHoy) * 100).toFixed(1)}%` : '0%'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">🧮 Calculadora de Ganancias</h3>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-lg font-semibold text-gray-700 mb-2 block">¿Cuánto te costó?</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl">$</span>
+                                            <input
+                                                type="number"
+                                                value={calculadora.costo}
+                                                onChange={(e) => setCalculadora({...calculadora, costo: e.target.value})}
+                                                className="w-full pl-8 pr-4 py-4 text-xl border-2 border-gray-300 rounded-xl focus:border-yellow-500"
+                                                placeholder="15.00"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-lg font-semibold text-gray-700 mb-2 block">¿A cuánto lo vendes?</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl">$</span>
+                                            <input
+                                                type="number"
+                                                value={calculadora.precio}
+                                                onChange={(e) => setCalculadora({...calculadora, precio: e.target.value})}
+                                                className="w-full pl-8 pr-4 py-4 text-xl border-2 border-gray-300 rounded-xl focus:border-yellow-500"
+                                                placeholder="25.00"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {calculadora.costo && calculadora.precio && (
+                                        <div className="bg-gradient-to-r from-green-100 to-blue-100 rounded-xl p-6 border-2 border-green-300">
+                                            <div className="text-center mb-4">
+                                                <h4 className="text-lg font-bold text-gray-800 mb-2">💰 Tu ganancia por unidad:</h4>
+                                                <p className="text-4xl font-bold text-green-600">
+                                                    ${(parseFloat(calculadora.precio) - parseFloat(calculadora.costo)).toFixed(2)}
+                                                </p>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-4 text-center">
+                                                <div>
+                                                    <p className="text-sm text-gray-600">Margen de ganancia</p>
+                                                    <p className="text-xl font-bold text-blue-600">
+                                                        {(((parseFloat(calculadora.precio) - parseFloat(calculadora.costo)) / parseFloat(calculadora.precio)) * 100).toFixed(1)}%
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-gray-600">Multiplicador</p>
+                                                    <p className="text-xl font-bold text-purple-600">
+                                                        {(parseFloat(calculadora.precio) / parseFloat(calculadora.costo)).toFixed(1)}x
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Recomendaciones de precio */}
+                                            <div className="mt-4 p-3 bg-white rounded-lg">
+                                                <p className="text-sm font-semibold text-gray-700 mb-2">📈 Análisis del margen:</p>
+                                                {(() => {
+                                                    const margen = ((parseFloat(calculadora.precio) - parseFloat(calculadora.costo)) / parseFloat(calculadora.precio)) * 100;
+                                                    if (margen < 20) {
+                                                        return <p className="text-red-600 text-sm">⚠️ Margen muy bajo. Considera aumentar el precio.</p>;
+                                                    } else if (margen < 40) {
+                                                        return <p className="text-yellow-600 text-sm">✅ Margen aceptable para productos básicos.</p>;
+                                                    } else if (margen < 60) {
+                                                        return <p className="text-green-600 text-sm">🎯 ¡Excelente margen! Muy buena ganancia.</p>;
+                                                    } else {
+                                                        return <p className="text-blue-600 text-sm">💎 Margen premium. Perfecto para productos especiales.</p>;
+                                                    }
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Proyecciones rápidas */}
+                            {calculadora.costo && calculadora.precio && (
+                                <div className="bg-white rounded-2xl p-6 shadow-lg">
+                                    <h3 className="text-lg font-bold text-gray-800 mb-4">🎯 Si vendes...</h3>
+                                    <div className="space-y-3">
+                                        {[10, 50, 100].map(cantidad => (
+                                            <div key={cantidad} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                <span className="font-semibold">{cantidad} unidades:</span>
+                                                <div className="text-right">
+                                                    <p className="font-bold text-green-600">
+                                                        ${(cantidad * parseFloat(calculadora.precio)).toFixed(2)} ventas
+                                                    </p>
+                                                    <p className="text-sm text-blue-600">
+                                                        ${(cantidad * (parseFloat(calculadora.precio) - parseFloat(calculadora.costo))).toFixed(2)} ganancia
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div><!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -44,6 +573,180 @@
                 minimo: ''
             });
             const [mostrarFormulario, setMostrarFormulario] = useState(false);
+            
+            // Estados para persistencia
+            const [fechaActual, setFechaActual] = useState(new Date().toDateString());
+            const [cargando, setCargando] = useState(true);
+            const [ultimaActualizacion, setUltimaActualizacion] = useState('');
+
+            // Inventario por defecto
+            const inventarioDefecto = [
+                { id: 1, nombre: 'Coca-Cola 600ml', cantidad: 24, costo: 12, precio: 18, vencimiento: '2025-08-15', minimo: 10 },
+                { id: 2, nombre: 'Sabritas Original', cantidad: 15, costo: 8, precio: 15, vencimiento: '2025-07-20', minimo: 5 },
+                { id: 3, nombre: 'Pan Bimbo Grande', cantidad: 8, costo: 25, precio: 35, vencimiento: '2025-06-25', minimo: 6 },
+                { id: 4, nombre: 'Leche Lala 1L', cantidad: 12, costo: 18, precio: 25, vencimiento: '2025-06-20', minimo: 8 },
+                { id: 5, nombre: 'Huevos San Juan', cantidad: 30, costo: 35, precio: 50, vencimiento: '2025-07-01', minimo: 12 }
+            ];
+
+            // Función para obtener la fecha actual
+            const obtenerFechaHoy = () => {
+                return new Date().toDateString();
+            };
+
+            // Función para cargar datos del día
+            const cargarDatosDelDia = () => {
+                const hoy = obtenerFechaHoy();
+                
+                try {
+                    const datosGuardadosStr = localStorage.getItem('miTiendita_datos');
+                    
+                    if (datosGuardadosStr) {
+                        const datosGuardados = JSON.parse(datosGuardadosStr);
+                        
+                        // Si es el mismo día, cargar datos
+                        if (datosGuardados.fecha === hoy) {
+                            setVentas(datosGuardados.ventas || []);
+                            setInventario(datosGuardados.inventario || inventarioDefecto);
+                            setUltimaActualizacion(datosGuardados.ultimaActualizacion || '');
+                            console.log('✅ Datos del día cargados');
+                        } else {
+                            // Si es nuevo día, guardar día anterior en histórico y empezar nuevo
+                            guardarDiaEnHistorico(datosGuardados);
+                            iniciarNuevoDia();
+                            console.log('🌅 Nuevo día iniciado - Día anterior guardado en histórico');
+                        }
+                    } else {
+                        iniciarNuevoDia();
+                        console.log('🆕 Primera vez usando la app');
+                    }
+                } catch (error) {
+                    console.log('❌ Error cargando datos, iniciando nuevo día');
+                    iniciarNuevoDia();
+                }
+                
+                setFechaActual(hoy);
+                setCargando(false);
+            };
+
+            // Función para guardar día en histórico
+            const guardarDiaEnHistorico = (datosDelDia) => {
+                if (datosDelDia.ventas && datosDelDia.ventas.length > 0) {
+                    try {
+                        const historico = JSON.parse(localStorage.getItem('miTiendita_historico') || '[]');
+                        
+                        // Calcular resumen del día
+                        const totalVentas = datosDelDia.ventas.reduce((total, venta) => total + (venta.cantidad * venta.precio), 0);
+                        const totalCostos = datosDelDia.ventas.reduce((total, venta) => {
+                            const producto = datosDelDia.inventario?.find(p => p.nombre === venta.producto);
+                            return total + (venta.cantidad * (producto?.costo || 0));
+                        }, 0);
+                        
+                        const resumenDia = {
+                            fecha: datosDelDia.fecha,
+                            fechaLegible: new Date(datosDelDia.fecha).toLocaleDateString('es-MX', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }),
+                            totalVentas: totalVentas,
+                            totalCostos: totalCostos,
+                            ganancias: totalVentas - totalCostos,
+                            numeroVentas: datosDelDia.ventas.length,
+                            ventas: datosDelDia.ventas,
+                            productosVendidos: datosDelDia.ventas.reduce((acc, venta) => {
+                                acc[venta.producto] = (acc[venta.producto] || 0) + venta.cantidad;
+                                return acc;
+                            }, {}),
+                            guardadoEn: new Date().toISOString()
+                        };
+                        
+                        // Agregar al histórico (máximo últimos 30 días)
+                        historico.unshift(resumenDia);
+                        if (historico.length > 30) {
+                            historico.splice(30);
+                        }
+                        
+                        localStorage.setItem('miTiendita_historico', JSON.stringify(historico));
+                        console.log('💾 Día anterior guardado en histórico:', resumenDia.fechaLegible);
+                    } catch (error) {
+                        console.log('❌ Error guardando en histórico:', error);
+                    }
+                }
+            };
+
+            // Función para iniciar nuevo día
+            const iniciarNuevoDia = () => {
+                const hoy = obtenerFechaHoy();
+                setFechaActual(hoy);
+                setVentas([]);
+                setUltimaActualizacion('');
+                // El inventario se mantiene, solo se resetean las ventas
+                console.log('🌅 Nuevo día iniciado:', new Date(hoy).toLocaleDateString('es-MX'));
+            };
+
+            // Función para guardar datos automáticamente
+            const guardarDatos = () => {
+                if (!cargando) {
+                    const datosDelDia = {
+                        fecha: obtenerFechaHoy(),
+                        ventas: ventas,
+                        inventario: inventario,
+                        ultimaActualizacion: new Date().toISOString()
+                    };
+                    
+                    try {
+                        localStorage.setItem('miTiendita_datos', JSON.stringify(datosDelDia));
+                        setUltimaActualizacion(datosDelDia.ultimaActualizacion);
+                        console.log('💾 Datos guardados automáticamente');
+                    } catch (error) {
+                        console.log('❌ Error guardando datos:', error);
+                    }
+                }
+            };
+
+            // Función para limpiar todos los datos
+            const limpiarTodosLosDatos = () => {
+                if (window.confirm('¿Estás seguro? Se borrarán TODOS los datos incluyendo el histórico.')) {
+                    try {
+                        localStorage.removeItem('miTiendita_datos');
+                        localStorage.removeItem('miTiendita_historico');
+                        setVentas([]);
+                        setInventario(inventarioDefecto);
+                        setUltimaActualizacion('');
+                        alert('✅ Todos los datos han sido eliminados');
+                        console.log('🗑️ Todos los datos eliminados');
+                    } catch (error) {
+                        console.log('❌ Error eliminando datos:', error);
+                    }
+                }
+            };
+
+            // USEEFFECT PARA CARGAR DATOS AL INICIO
+            useEffect(() => {
+                cargarDatosDelDia();
+            }, []);
+
+            // USEEFFECT PARA GUARDAR DATOS AUTOMÁTICAMENTE
+            useEffect(() => {
+                guardarDatos();
+            }, [ventas, inventario]);
+
+            // USEEFFECT PARA VERIFICAR CAMBIO DE DÍA
+            useEffect(() => {
+                const verificarCambioDia = () => {
+                    const hoy = obtenerFechaHoy();
+                    if (hoy !== fechaActual) {
+                        console.log('📅 Detectado cambio de día');
+                        cargarDatosDelDia();
+                    }
+                };
+
+                // Verificar cada minuto si cambió el día
+                const intervalo = setInterval(verificarCambioDia, 60000);
+                
+                return () => clearInterval(intervalo);
+            }, [fechaActual]);
 
             // Funciones auxiliares
             const getDiasVencimiento = (fecha) => {
@@ -87,15 +790,30 @@
             const gananciasHoy = totalVentasHoy - totalCostosHoy;
 
             // Componente de navegación
-            const HeaderNav = ({ title, onBack }) => (
-                <div className="flex items-center mb-6 bg-white p-4 rounded-2xl shadow-lg">
-                    <button
-                        onClick={onBack}
-                        className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full mr-4"
-                    >
-                        ←
-                    </button>
-                    <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            const HeaderNav = ({ title, onBack, children }) => (
+                <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-lg">
+                    <div className="flex items-center">
+                        <button
+                            onClick={onBack}
+                            className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full mr-4"
+                        >
+                            ←
+                        </button>
+                        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+                    </div>
+                    {children}
+                </div>
+            );
+
+            // Componente de carga
+            const PantallaCarga = () => (
+                <div className="min-h-screen bg-blue-50 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-6xl mb-4">🏪</div>
+                        <h2 className="text-2xl font-bold text-blue-900 mb-2">Mi Tiendita</h2>
+                        <p className="text-blue-700">Cargando tus datos...</p>
+                        <div className="mt-4 w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+                    </div>
                 </div>
             );
 
@@ -195,6 +913,106 @@
                 </div>
             );
 
+            // Pantalla de Histórico
+            const HistoricoScreen = () => {
+                const [historico, setHistorico] = useState([]);
+                
+                useEffect(() => {
+                    try {
+                        const datos = JSON.parse(localStorage.getItem('miTiendita_historico') || '[]');
+                        setHistorico(datos);
+                    } catch (error) {
+                        console.log('❌ Error cargando histórico:', error);
+                        setHistorico([]);
+                    }
+                }, []);
+                
+                return (
+                    <div className="min-h-screen bg-gray-50 p-4">
+                        <div className="max-w-md mx-auto">
+                            <HeaderNav title="📊 Historial de Días" onBack={() => setCurrentView('main')} />
+                            
+                            <div className="space-y-4">
+                                {historico.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <div className="text-6xl mb-4">📈</div>
+                                        <h3 className="text-xl font-bold text-gray-800 mb-2">Sin historial aún</h3>
+                                        <p className="text-gray-600">
+                                            Aquí aparecerán los resúmenes de tus días anteriores.
+                                            ¡Sigue vendiendo para crear tu primer día en el historial!
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="bg-blue-100 rounded-2xl p-4 mb-4">
+                                            <h3 className="font-bold text-blue-800 mb-2">📊 Resumen General</h3>
+                                            <div className="grid grid-cols-3 gap-4 text-center">
+                                                <div>
+                                                    <p className="text-sm text-blue-600">Días registrados</p>
+                                                    <p className="text-xl font-bold text-blue-800">{historico.length}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-blue-600">Total acumulado</p>
+                                                    <p className="text-xl font-bold text-green-600">
+                                                        ${historico.reduce((total, dia) => total + dia.totalVentas, 0).toFixed(2)}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm text-blue-600">Promedio diario</p>
+                                                    <p className="text-xl font-bold text-purple-600">
+                                                        ${(historico.reduce((total, dia) => total + dia.totalVentas, 0) / historico.length).toFixed(2)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {historico.map((dia, index) => {
+                                            const productoMasVendido = Object.entries(dia.productosVendidos).sort((a, b) => b[1] - a[1])[0];
+                                            
+                                            return (
+                                                <div key={index} className="bg-white rounded-2xl p-4 shadow-lg">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <h3 className="font-bold text-gray-800 text-lg">
+                                                            {dia.fechaLegible}
+                                                        </h3>
+                                                        <span className="text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                                            {index === 0 ? 'Ayer' : `Hace ${index + 1} días`}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-3 gap-4 mb-3">
+                                                        <div className="text-center">
+                                                            <p className="text-sm text-gray-600">Vendido</p>
+                                                            <p className="text-lg font-bold text-green-600">${dia.totalVentas.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-sm text-gray-600">Ganancia</p>
+                                                            <p className="text-lg font-bold text-blue-600">${dia.ganancias.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-sm text-gray-600">Ventas</p>
+                                                            <p className="text-lg font-bold text-purple-600">{dia.numeroVentas}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {productoMasVendido && (
+                                                        <div className="bg-yellow-50 rounded-lg p-3">
+                                                            <p className="text-sm text-yellow-800">
+                                                                <span className="font-semibold">🏆 Producto estrella:</span> {productoMasVendido[0]} ({productoMasVendido[1]} vendidos)
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             // Pantalla Principal
             const MainScreen = () => (
                 <div className="min-h-screen bg-blue-50 p-4">
@@ -202,6 +1020,11 @@
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-blue-900 mb-2">🏪 Mi Tiendita</h1>
                             <p className="text-lg text-blue-700">¡Bienvenido! ¿Qué vamos a hacer hoy?</p>
+                            {ultimaActualizacion && (
+                                <p className="text-sm text-blue-600 mt-2">
+                                    Último guardado: {new Date(ultimaActualizacion).toLocaleTimeString('es-MX')}
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-6">
@@ -236,6 +1059,14 @@
                                 <span className="text-4xl">💰</span>
                                 <span className="text-2xl font-bold">Mi Dinero del Día</span>
                             </button>
+
+                            <button
+                                onClick={() => setCurrentView('historico')}
+                                className="w-full bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-2xl shadow-lg flex items-center justify-center space-x-4 mt-4"
+                            >
+                                <span className="text-2xl">📊</span>
+                                <span className="text-lg font-bold">Ver Días Anteriores</span>
+                            </button>
                         </div>
 
                         <div className="mt-8 bg-white rounded-2xl p-4 shadow-lg">
@@ -253,374 +1084,5 @@
                             <p className="text-sm text-gray-600 mt-2">
                                 Productos en inventario: {inventario.length} | Ventas: {ventas.length}
                             </p>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            // Pantalla de Ventas
-            const VentasScreen = () => (
-                <div className="min-h-screen bg-green-50 p-4">
-                    <div className="max-w-md mx-auto">
-                        <HeaderNav title="🛒 Registrar Venta" onBack={() => setCurrentView('main')} />
-
-                        <div className="space-y-6">
-                            <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                <label className="text-xl font-bold text-gray-800 mb-4 block">¿Qué vendiste?</label>
-                                <select
-                                    value={ventaActual.producto}
-                                    onChange={(e) => {
-                                        const producto = inventario.find(p => p.id === parseInt(e.target.value));
-                                        setVentaActual({
-                                            ...ventaActual,
-                                            producto: e.target.value,
-                                            precio: producto ? producto.precio : 0
-                                        });
-                                    }}
-                                    className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl focus:border-green-500"
-                                >
-                                    <option value="">Selecciona un producto</option>
-                                    {inventario.map(producto => (
-                                        <option key={producto.id} value={producto.id}>
-                                            {producto.nombre} - ${producto.precio}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                <label className="text-xl font-bold text-gray-800 mb-4 block">¿Cuántos vendiste?</label>
-                                <div className="flex items-center justify-center space-x-4">
-                                    <button
-                                        onClick={() => setVentaActual({...ventaActual, cantidad: Math.max(1, ventaActual.cantidad - 1)})}
-                                        className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full text-2xl"
-                                    >
-                                        -
-                                    </button>
-                                    <span className="text-4xl font-bold text-gray-800 w-20 text-center">{ventaActual.cantidad}</span>
-                                    <button
-                                        onClick={() => setVentaActual({...ventaActual, cantidad: ventaActual.cantidad + 1})}
-                                        className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full text-2xl"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="bg-yellow-100 rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-xl font-bold text-gray-800 mb-2">Total de la venta:</h3>
-                                <p className="text-4xl font-bold text-green-600">${(ventaActual.cantidad * ventaActual.precio).toFixed(2)}</p>
-                            </div>
-
-                            <button
-                                onClick={() => {
-                                    if (ventaActual.producto) {
-                                        const producto = inventario.find(p => p.id === parseInt(ventaActual.producto));
-                                        const nuevaVenta = {
-                                            id: Date.now(),
-                                            producto: producto.nombre,
-                                            cantidad: ventaActual.cantidad,
-                                            precio: ventaActual.precio,
-                                            fecha: new Date().toLocaleString()
-                                        };
-                                        setVentas([...ventas, nuevaVenta]);
-                                        setVentaActual({ producto: '', cantidad: 1, precio: 0 });
-                                        alert('¡Venta registrada con éxito! 🎉');
-                                    }
-                                }}
-                                disabled={!ventaActual.producto}
-                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white p-6 rounded-2xl shadow-xl text-2xl font-bold"
-                            >
-                                ✓ Registrar Venta
-                            </button>
-                        </div>
-
-                        <div className="mt-8 bg-white rounded-2xl p-4 shadow-lg">
-                            <h3 className="text-xl font-bold text-gray-800 mb-4">Ventas de Hoy</h3>
-                            {ventas.length === 0 ? (
-                                <p className="text-gray-600">No hay ventas registradas hoy</p>
-                            ) : (
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                    {ventas.map(venta => (
-                                        <div key={venta.id} className="flex justify-between p-2 border-b">
-                                            <span>{venta.cantidad}x {venta.producto}</span>
-                                            <span className="font-bold">${(venta.cantidad * venta.precio).toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-
-            // Pantalla de Inventario
-            const InventarioScreen = () => (
-                <div className="min-h-screen bg-blue-50 p-4">
-                    <div className="max-w-md mx-auto">
-                        <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-lg">
-                            <div className="flex items-center">
-                                <button
-                                    onClick={() => setCurrentView('main')}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full mr-4"
-                                >
-                                    ←
-                                </button>
-                                <h1 className="text-2xl font-bold text-gray-900">📦 Mi Inventario</h1>
-                            </div>
-                            <button
-                                onClick={() => setMostrarFormulario(true)}
-                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2"
-                            >
-                                <span>➕</span>
-                                <span>Nuevo</span>
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {inventario.map(producto => {
-                                const dias = getDiasVencimiento(producto.vencimiento);
-                                return (
-                                    <div key={producto.id} className="bg-white rounded-2xl p-4 shadow-lg">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="text-lg font-bold text-gray-800">{producto.nombre}</h3>
-                                            <span className={`px-3 py-1 rounded-full text-sm font-bold ${getColorVencimiento(dias)}`}>
-                                                {dias > 0 ? `${dias} días` : 'Vencido'}
-                                            </span>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                            <div>
-                                                <p className="text-gray-600">Cantidad:</p>
-                                                <p className="text-2xl font-bold text-blue-600">{producto.cantidad}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-gray-600">Precio:</p>
-                                                <p className="text-2xl font-bold text-green-600">${producto.precio}</p>
-                                            </div>
-                                        </div>
-
-                                        {dias <= 15 && dias > 0 && (
-                                            <div className="mt-3 p-2 bg-yellow-100 rounded-lg">
-                                                <p className="text-yellow-800 text-sm font-semibold">
-                                                    ⚠️ ¡Próximo a vencer! Considera hacer promoción
-                                                </p>
-                                            </div>
-                                        )}
-                                        
-                                        {dias <= 0 && (
-                                            <div className="mt-3 p-2 bg-red-100 rounded-lg">
-                                                <p className="text-red-800 text-sm font-semibold">
-                                                    🚨 ¡Producto vencido! Retira de la venta
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {mostrarFormulario && (
-                            <FormularioProducto 
-                                onCerrar={() => setMostrarFormulario(false)}
-                                onGuardar={agregarProducto}
-                            />
-                        )}
-                    </div>
-                </div>
-            );
-
-            // Pantalla de Compras
-            const ComprasScreen = () => {
-                const productosPocos = inventario.filter(p => p.cantidad <= p.minimo);
-                const productosVencer = inventario.filter(p => getDiasVencimiento(p.vencimiento) <= 15 && getDiasVencimiento(p.vencimiento) > 0);
-
-                return (
-                    <div className="min-h-screen bg-purple-50 p-4">
-                        <div className="max-w-md mx-auto">
-                            <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-lg">
-                                <div className="flex items-center">
-                                    <button
-                                        onClick={() => setCurrentView('main')}
-                                        className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full mr-4"
-                                    >
-                                        ←
-                                    </button>
-                                    <h1 className="text-2xl font-bold text-gray-900">📋 ¿Qué debo comprar?</h1>
-                                </div>
-                                <button
-                                    onClick={() => setMostrarFormulario(true)}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2"
-                                >
-                                    <span>➕</span>
-                                    <span>Nuevo</span>
-                                </button>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                    <h3 className="text-xl font-bold text-red-600 mb-4 flex items-center">
-                                        ⚠️ Productos con poca existencia
-                                    </h3>
-                                    {productosPocos.length === 0 ? (
-                                        <p className="text-gray-600">¡Perfecto! Todos tus productos tienen buena existencia</p>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {productosPocos.map(producto => (
-                                                <div key={producto.id} className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                                                    <div>
-                                                        <p className="font-semibold text-gray-800">{producto.nombre}</p>
-                                                        <p className="text-sm text-gray-600">Quedan solo {producto.cantidad}</p>
-                                                    </div>
-                                                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                                        ¡Comprar!
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                    <h3 className="text-xl font-bold text-yellow-600 mb-4 flex items-center">
-                                        ⏰ Productos próximos a vencer
-                                    </h3>
-                                    {productosVencer.length === 0 ? (
-                                        <p className="text-gray-600">¡Excelente! No tienes productos próximos a vencer</p>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {productosVencer.map(producto => (
-                                                <div key={producto.id} className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                                                    <div>
-                                                        <p className="font-semibold text-gray-800">{producto.nombre}</p>
-                                                        <p className="text-sm text-gray-600">Vence en {getDiasVencimiento(producto.vencimiento)} días</p>
-                                                    </div>
-                                                    <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                                        ¡Promoción!
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="bg-green-100 rounded-2xl p-6 shadow-lg">
-                                    <h3 className="text-lg font-bold text-green-800 mb-2">💡 Consejo de Doña Carmen:</h3>
-                                    <p className="text-green-700">
-                                        "Mija, siempre ten productos básicos como refrescos, pan y leche. 
-                                        ¡Son los que más se venden todos los días!"
-                                    </p>
-                                </div>
-                            </div>
-
-                            {mostrarFormulario && (
-                                <FormularioProducto 
-                                    onCerrar={() => setMostrarFormulario(false)}
-                                    onGuardar={agregarProducto}
-                                />
-                            )}
-                        </div>
-                    </div>
-                );
-            };
-
-            // Pantalla de Dinero
-            const DineroScreen = () => (
-                <div className="min-h-screen bg-yellow-50 p-4">
-                    <div className="max-w-md mx-auto">
-                        <HeaderNav title="💰 Mi Dinero del Día" onBack={() => setCurrentView('main')} />
-
-                        <div className="space-y-6">
-                            <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen de Hoy</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
-                                        <span className="text-lg">Total Vendido:</span>
-                                        <span className="text-2xl font-bold text-green-600">${totalVentasHoy.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-lg">Ganancias:</span>
-                                        <span className="text-2xl font-bold text-blue-600">${gananciasHoy.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-lg">Número de Ventas:</span>
-                                        <span className="text-xl font-semibold">{ventas.length}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-xl font-bold text-gray-800 mb-4">Calculadora de Ganancias</h3>
-                                
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-lg font-semibold text-gray-700 mb-2 block">¿Cuánto te costó?</label>
-                                        <input
-                                            type="number"
-                                            value={calculadora.costo}
-                                            onChange={(e) => setCalculadora({...calculadora, costo: e.target.value})}
-                                            className="w-full p-4 text-xl border-2 border-gray-300 rounded-xl focus:border-yellow-500"
-                                            placeholder="Ejemplo: 15"
-                                        />
-                                    </div>
-                                    
-                                    <div>
-                                        <label className="text-lg font-semibold text-gray-700 mb-2 block">¿A cuánto lo vendes?</label>
-                                        <input
-                                            type="number"
-                                            value={calculadora.precio}
-                                            onChange={(e) => setCalculadora({...calculadora, precio: e.target.value})}
-                                            className="w-full p-4 text-xl border-2 border-gray-300 rounded-xl focus:border-yellow-500"
-                                            placeholder="Ejemplo: 25"
-                                        />
-                                    </div>
-
-                                    {calculadora.costo && calculadora.precio && (
-                                        <div className="bg-green-100 rounded-xl p-4">
-                                            <h4 className="text-lg font-bold text-gray-800 mb-2">Tu ganancia:</h4>
-                                            <p className="text-3xl font-bold text-green-600">
-                                                ${(parseFloat(calculadora.precio) - parseFloat(calculadora.costo)).toFixed(2)}
-                                            </p>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                Margen: {(((parseFloat(calculadora.precio) - parseFloat(calculadora.costo)) / parseFloat(calculadora.precio)) * 100).toFixed(1)}%
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="bg-blue-100 rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-lg font-bold text-blue-800 mb-2">💰 Consejo de Doña Carmen:</h3>
-                                <p className="text-blue-700">
-                                    "Mija, para productos que se venden mucho, una ganancia del 30-50% está bien. 
-                                    ¡Para productos especiales puedes ganar hasta 100%!"
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-
-            // Renderizar la pantalla actual
-            const renderCurrentView = () => {
-                switch (currentView) {
-                    case 'ventas':
-                        return <VentasScreen />;
-                    case 'inventario':
-                        return <InventarioScreen />;
-                    case 'compras':
-                        return <ComprasScreen />;
-                    case 'dinero':
-                        return <DineroScreen />;
-                    default:
-                        return <MainScreen />;
-                }
-            };
-
-            return renderCurrentView();
-        };
-
-        ReactDOM.render(<TiendaApp />, document.getElementById('root'));
-    </script>
-</body>
-</html>
+                            
+                            {/* Botón para limpiar datos (oculto normalmente)
