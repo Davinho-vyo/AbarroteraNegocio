@@ -35,6 +35,15 @@
             ]);
             const [ventaActual, setVentaActual] = useState({ producto: '', cantidad: 1, precio: 0 });
             const [calculadora, setCalculadora] = useState({ costo: '', precio: '' });
+            const [nuevoProducto, setNuevoProducto] = useState({ 
+                nombre: '', 
+                cantidad: '', 
+                costo: '', 
+                precio: '', 
+                vencimiento: '',
+                minimo: ''
+            });
+            const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
             // Funciones auxiliares
             const getDiasVencimiento = (fecha) => {
@@ -48,6 +57,26 @@
                 if (dias > 30) return 'bg-green-100 text-green-800';
                 if (dias > 15) return 'bg-yellow-100 text-yellow-800';
                 return 'bg-red-100 text-red-800';
+            };
+
+            const agregarProducto = () => {
+                if (nuevoProducto.nombre && nuevoProducto.cantidad && nuevoProducto.precio) {
+                    const producto = {
+                        id: Date.now(),
+                        nombre: nuevoProducto.nombre,
+                        cantidad: parseInt(nuevoProducto.cantidad),
+                        costo: parseFloat(nuevoProducto.costo) || 0,
+                        precio: parseFloat(nuevoProducto.precio),
+                        vencimiento: nuevoProducto.vencimiento || '2025-12-31',
+                        minimo: parseInt(nuevoProducto.minimo) || 5
+                    };
+                    setInventario([...inventario, producto]);
+                    setNuevoProducto({ nombre: '', cantidad: '', costo: '', precio: '', vencimiento: '', minimo: '' });
+                    setMostrarFormulario(false);
+                    alert('¡Producto agregado exitosamente! 🎉');
+                } else {
+                    alert('Por favor completa al menos: nombre, cantidad y precio');
+                }
             };
 
             const totalVentasHoy = ventas.reduce((total, venta) => total + (venta.cantidad * venta.precio), 0);
@@ -70,13 +99,109 @@
                 </div>
             );
 
+            // Componente de formulario para nuevo producto
+            const FormularioProducto = ({ onCerrar, onGuardar }) => (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full max-h-96 overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">➕ Nuevo Producto</h3>
+                            <button onClick={onCerrar} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del producto *</label>
+                                <input
+                                    type="text"
+                                    value={nuevoProducto.nombre}
+                                    onChange={(e) => setNuevoProducto({...nuevoProducto, nombre: e.target.value})}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500"
+                                    placeholder="Ej: Coca-Cola 600ml"
+                                />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Cantidad *</label>
+                                    <input
+                                        type="number"
+                                        value={nuevoProducto.cantidad}
+                                        onChange={(e) => setNuevoProducto({...nuevoProducto, cantidad: e.target.value})}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500"
+                                        placeholder="24"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Precio *</label>
+                                    <input
+                                        type="number"
+                                        value={nuevoProducto.precio}
+                                        onChange={(e) => setNuevoProducto({...nuevoProducto, precio: e.target.value})}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500"
+                                        placeholder="18"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Costo</label>
+                                    <input
+                                        type="number"
+                                        value={nuevoProducto.costo}
+                                        onChange={(e) => setNuevoProducto({...nuevoProducto, costo: e.target.value})}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500"
+                                        placeholder="12"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Stock mínimo</label>
+                                    <input
+                                        type="number"
+                                        value={nuevoProducto.minimo}
+                                        onChange={(e) => setNuevoProducto({...nuevoProducto, minimo: e.target.value})}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500"
+                                        placeholder="5"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha de vencimiento</label>
+                                <input
+                                    type="date"
+                                    value={nuevoProducto.vencimiento}
+                                    onChange={(e) => setNuevoProducto({...nuevoProducto, vencimiento: e.target.value})}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="flex space-x-3 mt-6">
+                            <button
+                                onClick={onGuardar}
+                                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-semibold"
+                            >
+                                💾 Guardar Producto
+                            </button>
+                            <button
+                                onClick={onCerrar}
+                                className="px-4 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
             // Pantalla Principal
             const MainScreen = () => (
                 <div className="min-h-screen bg-blue-50 p-4">
                     <div className="max-w-md mx-auto">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-blue-900 mb-2">🏪 Mi Tiendita</h1>
-                            <p className="text-lg text-blue-700">¡Hola Doña María! ¿Qué vamos a hacer hoy?</p>
+                            <p className="text-lg text-blue-700">¡Bienvenido! ¿Qué vamos a hacer hoy?</p>
                         </div>
 
                         <div className="space-y-6">
@@ -233,7 +358,24 @@
             const InventarioScreen = () => (
                 <div className="min-h-screen bg-blue-50 p-4">
                     <div className="max-w-md mx-auto">
-                        <HeaderNav title="📦 Mi Inventario" onBack={() => setCurrentView('main')} />
+                        <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-lg">
+                            <div className="flex items-center">
+                                <button
+                                    onClick={() => setCurrentView('main')}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full mr-4"
+                                >
+                                    ←
+                                </button>
+                                <h1 className="text-2xl font-bold text-gray-900">📦 Mi Inventario</h1>
+                            </div>
+                            <button
+                                onClick={() => setMostrarFormulario(true)}
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2"
+                            >
+                                <span>➕</span>
+                                <span>Nuevo</span>
+                            </button>
+                        </div>
 
                         <div className="space-y-4">
                             {inventario.map(producto => {
@@ -277,6 +419,13 @@
                                 );
                             })}
                         </div>
+
+                        {mostrarFormulario && (
+                            <FormularioProducto 
+                                onCerrar={() => setMostrarFormulario(false)}
+                                onGuardar={agregarProducto}
+                            />
+                        )}
                     </div>
                 </div>
             );
@@ -289,7 +438,24 @@
                 return (
                     <div className="min-h-screen bg-purple-50 p-4">
                         <div className="max-w-md mx-auto">
-                            <HeaderNav title="📋 ¿Qué debo comprar?" onBack={() => setCurrentView('main')} />
+                            <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-lg">
+                                <div className="flex items-center">
+                                    <button
+                                        onClick={() => setCurrentView('main')}
+                                        className="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full mr-4"
+                                    >
+                                        ←
+                                    </button>
+                                    <h1 className="text-2xl font-bold text-gray-900">📋 ¿Qué debo comprar?</h1>
+                                </div>
+                                <button
+                                    onClick={() => setMostrarFormulario(true)}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center space-x-2"
+                                >
+                                    <span>➕</span>
+                                    <span>Nuevo</span>
+                                </button>
+                            </div>
 
                             <div className="space-y-6">
                                 <div className="bg-white rounded-2xl p-6 shadow-lg">
@@ -346,6 +512,13 @@
                                     </p>
                                 </div>
                             </div>
+
+                            {mostrarFormulario && (
+                                <FormularioProducto 
+                                    onCerrar={() => setMostrarFormulario(false)}
+                                    onGuardar={agregarProducto}
+                                />
+                            )}
                         </div>
                     </div>
                 );
