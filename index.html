@@ -32,7 +32,8 @@ padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold}
 <div class="talavera-border"></div>
 <div id="root">Cargando...</div>
 <script type="text/babel">
-const {useState,useEffect,useRef,useCallback}=React;
+const {useState,useEffect,useRef}=React;
+
 function App(){
 const [currentView,setCurrentView]=useState('main');
 const [ventas,setVentas]=useState([]);
@@ -45,6 +46,7 @@ const [nuevoProducto,setNuevoProducto]=useState({nombre:'',cantidad:'',costo:'',
 const [productoEditando,setProductoEditando]=useState(null);
 const [mostrarFormulario,setMostrarFormulario]=useState(false);
 const [resumenDia,setResumenDia]=useState({totalVentas:0,totalGanancias:0,productosVendidos:0});
+const [datosListos,setDatosListos]=useState(false);
 
 const productosIniciales=[
 {id:1,nombre:'Coca-Cola 600ml',cantidad:24,costo:12,precio:18,vencimiento:'2025-08-15',minimo:10,foto:''},
@@ -54,28 +56,54 @@ const productosIniciales=[
 {id:5,nombre:'Huevos San Juan',cantidad:30,costo:35,precio:50,vencimiento:'2025-07-01',minimo:12,foto:''}
 ];
 
+// Inicialización
 useEffect(()=>{
-const guardarAntesDesCerrar=()=>guardarDatos();
+cargarDatosDelDia();
+cargarConfiguracion();
+},[]);
+
+// Guardar datos solo cuando cambien y estén listos
+useEffect(()=>{
+if(datosListos){
+const timer=setTimeout(()=>{
+guardarDatos();
+},1000);
+return()=>clearTimeout(timer);
+}
+},[inventario,ventas,datosListos]);
+
+// Guardar antes de cerrar
+useEffect(()=>{
+const guardarAntesDesCerrar=(e)=>{
+if(datosListos){
+guardarDatos();
+}
+};
 window.addEventListener('beforeunload',guardarAntesDesCerrar);
 window.addEventListener('pagehide',guardarAntesDesCerrar);
-window.addEventListener('visibilitychange',()=>{if(document.hidden)guardarDatos()});
-const intervalo=setInterval(()=>guardarDatos(),30000);
 return()=>{
 window.removeEventListener('beforeunload',guardarAntesDesCerrar);
 window.removeEventListener('pagehide',guardarAntesDesCerrar);
-clearInterval(intervalo);
 };
-},[inventario,ventas]);
+},[datosListos]);
 
-useEffect(()=>{cargarDatosDelDia();cargarConfiguracion()},[]);
-useEffect(()=>{if(inventario.length>0||ventas.length>0)guardarDatos()},[inventario,ventas]);
-useEffect(()=>actualizarResumen(),[ventas,selectedDate]);
+// Actualizar resumen
+useEffect(()=>{
+if(datosListos){
+actualizarResumen();
+}
+},[ventas,selectedDate,datosListos]);
 
 const cargarConfiguracion=()=>{
 try{
 const config=localStorage.getItem('miTiendita_config');
-if(config){const{premium}=JSON.parse(config);setIsPremium(premium||false)}
-}catch(e){console.error('Error config:',e)}
+if(config){
+const{premium}=JSON.parse(config);
+setIsPremium(premium||false);
+}
+}catch(e){
+console.log('Sin configuración previa');
+}
 };
 
 const cargarDatosDelDia=()=>{
@@ -83,6 +111,7 @@ try{
 const fechaSeleccionada=selectedDate.toLocaleDateString('es-MX');
 const datosGuardados=localStorage.getItem('miTiendita_datos');
 const historico=JSON.parse(localStorage.getItem('miTiendita_historico')||'{}');
+
 if(datosGuardados){
 const datos=JSON.parse(datosGuardados);
 setInventario(datos.inventario||productosIniciales);
@@ -90,30 +119,56 @@ if(historico[fechaSeleccionada]){
 setVentas(historico[fechaSeleccionada].ventas||[]);
 }else if(datos.fecha===fechaSeleccionada){
 setVentas(datos.ventas||[]);
-}else{setVentas([])}
-}else{setInventario(productosIniciales);setVentas([])}
-}catch(e){console.error('Error carga:',e);setInventario(productosIniciales);setVentas([])}
+}else{
+setVentas([]);
+}
+}else{
+setInventario(productosIniciales);
+setVentas([]);
+}
+setDatosListos(true);
+}catch(e){
+console.log('Inicializando datos nuevos');
+setInventario(productosIniciales);
+setVentas([]);
+setDatosListos(true);
+}
 };
 
-const guardarDatos=useCallback(()=>{
+const guardarDatos=()=>{
+if(!datosListos)return;
 try{
 const hoy=new Date().toLocaleDateString('es-MX');
 const fechaSeleccionada=selectedDate.toLocaleDateString('es-MX');
-const datos={fecha:hoy,inventario:inventario,ventas:hoy===fechaSeleccionada?ventas:[],
-resumen:resumenDia,ultimaActualizacion:new Date().toISOString()};
+const datos={
+fecha:hoy,
+inventario:inventario,
+ventas:hoy===fechaSeleccionada?ventas:[],
+resumen:resumenDia
+};
 localStorage.setItem('miTiendita_datos',JSON.stringify(datos));
+
 const historico=JSON.parse(localStorage.getItem('miTiendita_historico')||'{}');
 const diasLimite=isPremium?90:15;
 const fechasOrdenadas=Object.keys(historico).sort((a,b)=>new Date(b)-new Date(a));
+
 if(hoy===fechaSeleccionada&&ventas.length>0){
-historico[fechaSeleccionada]={ventas:ventas,resumen:resumenDia,fecha:fechaSeleccionada};
+historico[fechaSeleccionada]={
+ventas:ventas,
+resumen:resumenDia,
+fecha:fechaSeleccionada
+};
 }
+
 if(fechasOrdenadas.length>diasLimite){
 fechasOrdenadas.slice(diasLimite).forEach(fecha=>delete historico[fecha]);
 }
+
 localStorage.setItem('miTiendita_historico',JSON.stringify(historico));
-}catch(e){console.error('Error guardar:',e);alert('Error al guardar datos')}
-},[inventario,ventas,resumenDia,selectedDate,isPremium]);
+}catch(e){
+console.log('No se pudo guardar, se reintentará');
+}
+};
 
 const getDiasVencimiento=(fecha)=>{
 const hoy=new Date();
@@ -154,7 +209,8 @@ if(width>maxSize){height=(height*maxSize)/width;width=maxSize}
 }else{
 if(height>maxSize){width=(width*maxSize)/height;height=maxSize}
 }
-canvas.width=width;canvas.height=height;
+canvas.width=width;
+canvas.height=height;
 ctx.drawImage(img,0,0,width,height);
 resolve(canvas.toDataURL('image/jpeg',0.7));
 };
@@ -166,36 +222,46 @@ reader.readAsDataURL(file);
 
 const registrarVenta=()=>{
 if(!ventaActual.productoId||ventaActual.cantidad<1){
-alert('Selecciona producto y cantidad');return;
+alert('Selecciona producto y cantidad');
+return;
 }
 const producto=inventario.find(p=>p.id===parseInt(ventaActual.productoId));
 if(!producto)return;
 if(producto.cantidad<ventaActual.cantidad){
-alert(`Solo tienes ${producto.cantidad} unidades`);return;
+alert(`Solo tienes ${producto.cantidad} unidades`);
+return;
 }
 const nuevaVenta={
-id:Date.now(),productoId:producto.id,productoNombre:producto.nombre,
-cantidad:ventaActual.cantidad,precio:producto.precio,costo:producto.costo,
-total:ventaActual.total,fecha:selectedDate.toISOString(),
+id:Date.now(),
+productoId:producto.id,
+productoNombre:producto.nombre,
+cantidad:ventaActual.cantidad,
+precio:producto.precio,
+costo:producto.costo,
+total:ventaActual.total,
+fecha:selectedDate.toISOString(),
 hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
 };
 setVentas([...ventas,nuevaVenta]);
 setInventario(inventario.map(p=>p.id===producto.id?{...p,cantidad:p.cantidad-ventaActual.cantidad}:p));
 setVentaActual({productoId:'',cantidad:1,total:0});
-setTimeout(()=>guardarDatos(),100);
 alert('¡Venta registrada!');
 };
 
 const agregarProducto=async()=>{
 if(!nuevoProducto.nombre||!nuevoProducto.cantidad||!nuevoProducto.costo||
 !nuevoProducto.precio||!nuevoProducto.vencimiento||!nuevoProducto.minimo){
-alert('Completa todos los campos');return;
+alert('Completa todos los campos');
+return;
 }
 const producto={
 id:productoEditando?productoEditando.id:Date.now(),
-nombre:nuevoProducto.nombre,cantidad:parseInt(nuevoProducto.cantidad),
-costo:parseFloat(nuevoProducto.costo),precio:parseFloat(nuevoProducto.precio),
-vencimiento:nuevoProducto.vencimiento,minimo:parseInt(nuevoProducto.minimo),
+nombre:nuevoProducto.nombre,
+cantidad:parseInt(nuevoProducto.cantidad),
+costo:parseFloat(nuevoProducto.costo),
+precio:parseFloat(nuevoProducto.precio),
+vencimiento:nuevoProducto.vencimiento,
+minimo:parseInt(nuevoProducto.minimo),
 foto:nuevoProducto.foto||''
 };
 if(productoEditando){
@@ -206,16 +272,18 @@ setInventario([...inventario,producto]);
 }
 setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
 setMostrarFormulario(false);
-setTimeout(()=>guardarDatos(),100);
 alert(productoEditando?'¡Producto actualizado!':'¡Producto agregado!');
 };
 
 const editarProducto=(producto)=>{
 setProductoEditando(producto);
 setNuevoProducto({
-nombre:producto.nombre,cantidad:producto.cantidad.toString(),
-costo:producto.costo.toString(),precio:producto.precio.toString(),
-vencimiento:producto.vencimiento,minimo:producto.minimo.toString(),
+nombre:producto.nombre,
+cantidad:producto.cantidad.toString(),
+costo:producto.costo.toString(),
+precio:producto.precio.toString(),
+vencimiento:producto.vencimiento,
+minimo:producto.minimo.toString(),
 foto:producto.foto||''
 });
 setMostrarFormulario(true);
@@ -224,7 +292,6 @@ setMostrarFormulario(true);
 const eliminarProducto=(id)=>{
 if(confirm('¿Eliminar producto?')){
 setInventario(inventario.filter(p=>p.id!==id));
-setTimeout(()=>guardarDatos(),100);
 }
 };
 
@@ -232,7 +299,9 @@ const handleVentaChange=(field,value)=>{
 const updatedVenta={...ventaActual,[field]:value};
 if(field==='productoId'||field==='cantidad'){
 const producto=inventario.find(p=>p.id===parseInt(updatedVenta.productoId));
-if(producto){updatedVenta.total=producto.precio*parseInt(updatedVenta.cantidad||0)}
+if(producto){
+updatedVenta.total=producto.precio*parseInt(updatedVenta.cantidad||0);
+}
 }
 setVentaActual(updatedVenta);
 };
@@ -240,11 +309,16 @@ setVentaActual(updatedVenta);
 const handleImageUpload=async(e)=>{
 const file=e.target.files[0];
 if(file){
-if(file.size>5*1024*1024){alert('Imagen muy grande. Max 5MB');return}
+if(file.size>5*1024*1024){
+alert('Imagen muy grande. Max 5MB');
+return;
+}
 try{
 const imagenComprimida=await comprimirImagen(file);
 setNuevoProducto({...nuevoProducto,foto:imagenComprimida});
-}catch(error){alert('Error al procesar imagen')}
+}catch(error){
+alert('Error al procesar imagen');
+}
 }
 };
 
@@ -402,7 +476,8 @@ const VentasView=()=>(
 <div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
 <div>
 <label className="block text-lg font-semibold mb-2">Producto:</label>
-<select value={ventaActual.productoId} onChange={(e)=>handleVentaChange('productoId',e.target.value)}
+<select value={ventaActual.productoId} 
+onChange={(e)=>handleVentaChange('productoId',e.target.value)}
 className="w-full p-4 text-lg border-2 rounded-xl">
 <option value="">Selecciona un producto</option>
 {inventario.filter(p=>p.cantidad>0).map(producto=>(
@@ -466,7 +541,8 @@ setProductoEditando(null);
 setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
 setMostrarFormulario(true);
 }} className="bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 hover:bg-blue-600">
-<span>➕</span><span>Nuevo</span>
+<span>➕</span>
+<span>Nuevo</span>
 </button>
 </div>
 {inventario.length===0?(
@@ -482,7 +558,8 @@ return(
 <div key={producto.id} className="bg-white rounded-2xl shadow-xl p-6">
 <div className="flex items-start space-x-4">
 {producto.foto&&(
-<img src={producto.foto} alt={producto.nombre} className="w-20 h-20 object-cover rounded-lg"/>
+<img src={producto.foto} alt={producto.nombre} 
+className="w-20 h-20 object-cover rounded-lg"/>
 )}
 <div className="flex-1">
 <div className="flex justify-between items-start mb-2">
@@ -491,19 +568,31 @@ return(
 <span className={`px-3 py-1 rounded-full text-sm ${colorVencimiento}`}>
 {diasVencimiento} días
 </span>
-<button onClick={()=>editarProducto(producto)} className="text-blue-600 hover:text-blue-800">✏️</button>
-<button onClick={()=>eliminarProducto(producto.id)} className="text-red-600 hover:text-red-800">🗑️</button>
+<button onClick={()=>editarProducto(producto)} 
+className="text-blue-600 hover:text-blue-800">✏️</button>
+<button onClick={()=>eliminarProducto(producto.id)} 
+className="text-red-600 hover:text-red-800">🗑️</button>
 </div>
 </div>
 <div className="grid grid-cols-2 gap-2 text-sm">
-<div><span className="text-gray-600">Stock:</span>
-<span className={`font-bold ml-2 ${stockBajo?'text-red-600':''}`}>{producto.cantidad} unidades</span></div>
-<div><span className="text-gray-600">Precio:</span>
-<span className="font-bold ml-2">${producto.precio}</span></div>
-<div><span className="text-gray-600">Costo:</span>
-<span className="ml-2">${producto.costo}</span></div>
-<div><span className="text-gray-600">Mínimo:</span>
-<span className="ml-2">{producto.minimo}</span></div>
+<div>
+<span className="text-gray-600">Stock:</span>
+<span className={`font-bold ml-2 ${stockBajo?'text-red-600':''}`}>
+{producto.cantidad} unidades
+</span>
+</div>
+<div>
+<span className="text-gray-600">Precio:</span>
+<span className="font-bold ml-2">${producto.precio}</span>
+</div>
+<div>
+<span className="text-gray-600">Costo:</span>
+<span className="ml-2">${producto.costo}</span>
+</div>
+<div>
+<span className="text-gray-600">Mínimo:</span>
+<span className="ml-2">{producto.minimo}</span>
+</div>
 </div>
 {stockBajo&&(
 <div className="mt-3 bg-red-100 text-red-700 p-2 rounded-lg text-sm">
@@ -519,13 +608,20 @@ return(
 {mostrarFormulario&&(
 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
 <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
-<h2 className="text-xl font-bold">{productoEditando?'Editar Producto':'Agregar Nuevo Producto'}</h2>
+<h2 className="text-xl font-bold">
+{productoEditando?'Editar Producto':'Agregar Nuevo Producto'}
+</h2>
 <input type="text" placeholder="Nombre del producto" value={nuevoProducto.nombre}
 onChange={(e)=>setNuevoProducto({...nuevoProducto,nombre:e.target.value})}
 className="w-full p-3 border-2 rounded-xl"/>
 <div className="grid grid-cols-2 gap-4">
 <input type="number" placeholder="Cantidad" value={nuevoProducto.cantidad}
 onChange={(e)=>setNuevoProducto({...nuevoProducto,cantidad:e.target.value})}
+className="p-3 border-2 rounded-xl"/>
+</div>
+<div className="grid grid-cols-2 gap-4">
+<input type="number" placeholder="Costo $" value={nuevoProducto.costo}
+onChange={(e)=>setNuevoProducto({...nuevoProducto,costo:e.target.value})}
 className="p-3 border-2 rounded-xl"/>
 <input type="number" placeholder="Precio $" value={nuevoProducto.precio}
 onChange={(e)=>setNuevoProducto({...nuevoProducto,precio:e.target.value})}
@@ -540,9 +636,12 @@ className="w-full p-3 border-2 rounded-xl"/>
 className="w-full p-2 border-2 rounded-xl text-sm"/>
 {nuevoProducto.foto&&(
 <div className="relative inline-block">
-<img src={nuevoProducto.foto} alt="Vista previa" className="w-32 h-32 object-cover rounded-lg"/>
+<img src={nuevoProducto.foto} alt="Vista previa" 
+className="w-32 h-32 object-cover rounded-lg"/>
 <button onClick={()=>setNuevoProducto({...nuevoProducto,foto:''})}
-className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs">✕</button>
+className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs">
+✕
+</button>
 </div>
 )}
 </div>
@@ -581,7 +680,8 @@ setProductoEditando(null);
 setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
 setMostrarFormulario(true);
 }} className="bg-purple-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 hover:bg-purple-600">
-<span>➕</span><span>Nuevo</span>
+<span>➕</span>
+<span>Nuevo</span>
 </button>
 </div>
 {productosComprar.length===0?(
@@ -603,7 +703,8 @@ return(
 <div key={producto.id} className="bg-white rounded-2xl shadow-xl p-6">
 <div className="flex items-start space-x-4">
 {producto.foto&&(
-<img src={producto.foto} alt={producto.nombre} className="w-16 h-16 object-cover rounded-lg"/>
+<img src={producto.foto} alt={producto.nombre} 
+className="w-16 h-16 object-cover rounded-lg"/>
 )}
 <div className="flex-1">
 <h3 className="text-lg font-bold mb-2">{producto.nombre}</h3>
@@ -718,7 +819,9 @@ return(
 {analisis.mejorDia&&(
 <div className="bg-white bg-opacity-50 p-3 rounded-lg">
 <p className="text-sm text-gray-600">Mejor día de la semana:</p>
-<p className="font-bold">{new Date(analisis.mejorDia.fecha).toLocaleDateString('es-MX',{weekday:'long'})}</p>
+<p className="font-bold">
+{new Date(analisis.mejorDia.fecha).toLocaleDateString('es-MX',{weekday:'long'})}
+</p>
 <p className="text-lg">${analisis.mejorDia.venta.toFixed(2)}</p>
 </div>
 )}
@@ -757,7 +860,9 @@ className="w-full p-3 border-2 rounded-xl"/>
 <div className="border-t pt-3">
 <p className="text-center">
 <span className="text-gray-600">Ganancia total: </span>
-<span className="text-2xl font-bold text-green-600">${calculadora.ganancia.toFixed(2)}</span>
+<span className="text-2xl font-bold text-green-600">
+${calculadora.ganancia.toFixed(2)}
+</span>
 </p>
 </div>
 </div>
@@ -769,12 +874,16 @@ className="w-full p-3 border-2 rounded-xl"/>
 <div className="space-y-3">
 <div className="bg-blue-50 p-4 rounded-xl">
 <p className="font-semibold">Si mantienes este ritmo...</p>
-<p className="text-2xl font-bold text-blue-600">${(resumenDia.totalVentas*30).toFixed(2)}</p>
+<p className="text-2xl font-bold text-blue-600">
+${(resumenDia.totalVentas*30).toFixed(2)}
+</p>
 <p className="text-sm text-gray-600">ganarás este mes</p>
 </div>
 <div className="bg-green-50 p-4 rounded-xl">
 <p className="font-semibold">Meta diaria recomendada:</p>
-<p className="text-2xl font-bold text-green-600">${Math.max(resumenDia.totalVentas*1.1,500).toFixed(2)}</p>
+<p className="text-2xl font-bold text-green-600">
+${Math.max(resumenDia.totalVentas*1.1,500).toFixed(2)}
+</p>
 <p className="text-sm text-gray-600">10% más que hoy</p>
 </div>
 </div>
@@ -845,16 +954,12 @@ className="w-full bg-blue-500 text-white p-4 rounded-xl text-lg font-bold hover:
 </div>
 );
 }
+
 const root=ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App/>);
 </script>
 </body>
-</html>="Stock mínimo" value={nuevoProducto.minimo}
+</html>"/>
+<input type="number" placeholder="Stock mínimo" value={nuevoProducto.minimo}
 onChange={(e)=>setNuevoProducto({...nuevoProducto,minimo:e.target.value})}
-className="p-3 border-2 rounded-xl"/>
-</div>
-<div className="grid grid-cols-2 gap-4">
-<input type="number" placeholder="Costo $" value={nuevoProducto.costo}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,costo:e.target.value})}
-className="p-3 border-2 rounded-xl"/>
-<input type="number" placeholder
+className="p-3 border-2 rounded-xl
