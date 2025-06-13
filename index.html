@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mi Tiendita - Gestión Simple</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,23 +14,139 @@
             background-color: #f0f4f8;
             margin: 0;
             padding: 0;
+            position: relative;
+            overflow-x: hidden;
         }
+        
+        /* Diseño mexicano de fondo */
+        .mexican-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+            background-image: 
+                repeating-linear-gradient(45deg, #e74c3c 0, #e74c3c 10px, transparent 10px, transparent 20px),
+                repeating-linear-gradient(-45deg, #3498db 0, #3498db 10px, transparent 10px, transparent 20px),
+                repeating-linear-gradient(90deg, #f39c12 0, #f39c12 2px, transparent 2px, transparent 40px);
+            background-size: 60px 60px, 60px 60px, 40px 40px;
+        }
+        
+        .talavera-border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                #2980b9 0px,
+                #2980b9 10px,
+                #e74c3c 10px,
+                #e74c3c 20px,
+                #f39c12 20px,
+                #f39c12 30px,
+                #27ae60 30px,
+                #27ae60 40px
+            );
+            opacity: 0.1;
+        }
+        
         #root {
             min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Fix para mantener el teclado abierto */
+        input, textarea, select {
+            -webkit-user-select: text;
+            user-select: text;
+            touch-action: manipulation;
+        }
+        
+        /* Prevenir zoom en iOS */
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            font-size: 16px !important;
+        }
+        
+        /* Estilo para el calendario */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .calendar-day:hover {
+            transform: scale(1.05);
+        }
+        
+        .calendar-day.has-sales {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .calendar-day.selected {
+            border: 2px solid #3b82f6;
+        }
+        
+        /* Animaciones suaves */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Badge para versión premium */
+        .premium-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
         }
     </style>
 </head>
 <body>
-    <div id="root">Cargando...</div>
+    <div class="mexican-pattern"></div>
+    <div class="talavera-border"></div>
+    <div id="root">Cargando Mi Tiendita...</div>
     
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
         function App() {
             // Estados principales
             const [currentView, setCurrentView] = useState('main');
             const [ventas, setVentas] = useState([]);
             const [inventario, setInventario] = useState([]);
+            const [selectedDate, setSelectedDate] = useState(new Date());
+            const [showCalendar, setShowCalendar] = useState(false);
+            const [isPremium, setIsPremium] = useState(false);
             const [ventaActual, setVentaActual] = useState({
                 productoId: '',
                 cantidad: 1,
@@ -42,8 +158,10 @@
                 costo: '',
                 precio: '',
                 vencimiento: '',
-                minimo: ''
+                minimo: '',
+                foto: ''
             });
+            const [productoEditando, setProductoEditando] = useState(null);
             const [mostrarFormulario, setMostrarFormulario] = useState(false);
             const [resumenDia, setResumenDia] = useState({
                 totalVentas: 0,
@@ -51,18 +169,55 @@
                 productosVendidos: 0
             });
 
+            // Referencias para prevenir pérdida de focus
+            const inputRefs = {
+                nombre: useRef(null),
+                cantidad: useRef(null),
+                costo: useRef(null),
+                precio: useRef(null),
+                minimo: useRef(null)
+            };
+
             // Productos iniciales
             const productosIniciales = [
-                { id: 1, nombre: 'Coca-Cola 600ml', cantidad: 24, costo: 12, precio: 18, vencimiento: '2025-08-15', minimo: 10 },
-                { id: 2, nombre: 'Sabritas Original', cantidad: 15, costo: 8, precio: 15, vencimiento: '2025-07-20', minimo: 5 },
-                { id: 3, nombre: 'Pan Bimbo Grande', cantidad: 8, costo: 25, precio: 35, vencimiento: '2025-06-25', minimo: 6 },
-                { id: 4, nombre: 'Leche Lala 1L', cantidad: 12, costo: 18, precio: 25, vencimiento: '2025-06-20', minimo: 8 },
-                { id: 5, nombre: 'Huevos San Juan', cantidad: 30, costo: 35, precio: 50, vencimiento: '2025-07-01', minimo: 12 }
+                { id: 1, nombre: 'Coca-Cola 600ml', cantidad: 24, costo: 12, precio: 18, vencimiento: '2025-08-15', minimo: 10, foto: '' },
+                { id: 2, nombre: 'Sabritas Original', cantidad: 15, costo: 8, precio: 15, vencimiento: '2025-07-20', minimo: 5, foto: '' },
+                { id: 3, nombre: 'Pan Bimbo Grande', cantidad: 8, costo: 25, precio: 35, vencimiento: '2025-06-25', minimo: 6, foto: '' },
+                { id: 4, nombre: 'Leche Lala 1L', cantidad: 12, costo: 18, precio: 25, vencimiento: '2025-06-20', minimo: 8, foto: '' },
+                { id: 5, nombre: 'Huevos San Juan', cantidad: 30, costo: 35, precio: 50, vencimiento: '2025-07-01', minimo: 12, foto: '' }
             ];
+
+            // Guardar datos antes de cerrar la app
+            useEffect(() => {
+                const guardarAntesDesCerrar = (e) => {
+                    guardarDatos();
+                };
+
+                // Eventos para guardar datos
+                window.addEventListener('beforeunload', guardarAntesDesCerrar);
+                window.addEventListener('pagehide', guardarAntesDesCerrar);
+                window.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        guardarDatos();
+                    }
+                });
+
+                // Guardar cada 30 segundos como respaldo
+                const intervalo = setInterval(() => {
+                    guardarDatos();
+                }, 30000);
+
+                return () => {
+                    window.removeEventListener('beforeunload', guardarAntesDesCerrar);
+                    window.removeEventListener('pagehide', guardarAntesDesCerrar);
+                    clearInterval(intervalo);
+                };
+            }, [inventario, ventas]);
 
             // Cargar datos al iniciar
             useEffect(() => {
                 cargarDatosDelDia();
+                cargarConfiguracion();
             }, []);
 
             // Guardar datos cuando cambien
@@ -72,66 +227,101 @@
                 }
             }, [inventario, ventas]);
 
-            // Actualizar resumen cuando cambien las ventas
+            // Actualizar resumen cuando cambien las ventas o fecha
             useEffect(() => {
                 actualizarResumen();
-            }, [ventas]);
+            }, [ventas, selectedDate]);
 
-            // Funciones de persistencia
+            // Funciones de configuración
+            const cargarConfiguracion = () => {
+                try {
+                    const config = localStorage.getItem('miTiendita_config');
+                    if (config) {
+                        const { premium } = JSON.parse(config);
+                        setIsPremium(premium || false);
+                    }
+                } catch (error) {
+                    console.error('Error al cargar configuración:', error);
+                }
+            };
+
+            // Funciones de persistencia mejoradas
             const cargarDatosDelDia = () => {
                 try {
-                    const hoy = new Date().toLocaleDateString('es-MX');
+                    const fechaSeleccionada = selectedDate.toLocaleDateString('es-MX');
                     const datosGuardados = localStorage.getItem('miTiendita_datos');
+                    const historico = JSON.parse(localStorage.getItem('miTiendita_historico') || '{}');
                     
                     if (datosGuardados) {
                         const datos = JSON.parse(datosGuardados);
                         
-                        if (datos.fecha === hoy) {
-                            setInventario(datos.inventario || productosIniciales);
+                        // Siempre cargar inventario actual
+                        setInventario(datos.inventario || productosIniciales);
+                        
+                        // Cargar ventas del día seleccionado
+                        if (historico[fechaSeleccionada]) {
+                            setVentas(historico[fechaSeleccionada].ventas || []);
+                        } else if (datos.fecha === fechaSeleccionada) {
                             setVentas(datos.ventas || []);
                         } else {
-                            // Nuevo día
-                            guardarDiaEnHistorico(datos);
-                            setInventario(datos.inventario || productosIniciales);
                             setVentas([]);
                         }
                     } else {
                         // Primera vez
                         setInventario(productosIniciales);
+                        setVentas([]);
                     }
                 } catch (error) {
                     console.error('Error al cargar datos:', error);
                     setInventario(productosIniciales);
+                    setVentas([]);
                 }
             };
 
-            const guardarDatos = () => {
+            const guardarDatos = useCallback(() => {
                 try {
+                    const hoy = new Date().toLocaleDateString('es-MX');
+                    const fechaSeleccionada = selectedDate.toLocaleDateString('es-MX');
+                    
+                    // Guardar datos actuales
                     const datos = {
-                        fecha: new Date().toLocaleDateString('es-MX'),
+                        fecha: hoy,
                         inventario: inventario,
-                        ventas: ventas,
-                        resumen: resumenDia
+                        ventas: hoy === fechaSeleccionada ? ventas : [],
+                        resumen: resumenDia,
+                        ultimaActualizacion: new Date().toISOString()
                     };
                     localStorage.setItem('miTiendita_datos', JSON.stringify(datos));
-                } catch (error) {
-                    console.error('Error al guardar datos:', error);
-                }
-            };
-
-            const guardarDiaEnHistorico = (datos) => {
-                try {
-                    const historico = JSON.parse(localStorage.getItem('miTiendita_historico') || '[]');
-                    historico.unshift(datos);
-                    // Mantener solo últimos 30 días
-                    if (historico.length > 30) {
-                        historico.pop();
+                    
+                    // Guardar en histórico
+                    const historico = JSON.parse(localStorage.getItem('miTiendita_historico') || '{}');
+                    
+                    // Límite de días según versión
+                    const diasLimite = isPremium ? 90 : 15;
+                    const fechasOrdenadas = Object.keys(historico).sort((a, b) => new Date(b) - new Date(a));
+                    
+                    // Si es el día actual, guardar las ventas
+                    if (hoy === fechaSeleccionada && ventas.length > 0) {
+                        historico[fechaSeleccionada] = {
+                            ventas: ventas,
+                            resumen: resumenDia,
+                            fecha: fechaSeleccionada
+                        };
                     }
+                    
+                    // Eliminar días antiguos
+                    if (fechasOrdenadas.length > diasLimite) {
+                        fechasOrdenadas.slice(diasLimite).forEach(fecha => {
+                            delete historico[fecha];
+                        });
+                    }
+                    
                     localStorage.setItem('miTiendita_historico', JSON.stringify(historico));
                 } catch (error) {
-                    console.error('Error al guardar histórico:', error);
+                    console.error('Error al guardar datos:', error);
+                    alert('Error al guardar los datos. Por favor, intenta de nuevo.');
                 }
-            };
+            }, [inventario, ventas, resumenDia, selectedDate, isPremium]);
 
             // Funciones de utilidad
             const getDiasVencimiento = (fecha) => {
@@ -148,14 +338,59 @@
             };
 
             const actualizarResumen = () => {
-                const totalVentas = ventas.reduce((sum, v) => sum + v.total, 0);
-                const totalGanancias = ventas.reduce((sum, v) => sum + (v.total - (v.costo * v.cantidad)), 0);
-                const productosVendidos = ventas.reduce((sum, v) => sum + v.cantidad, 0);
+                const ventasDelDia = ventas.filter(v => {
+                    const fechaVenta = new Date(v.fecha || selectedDate).toLocaleDateString('es-MX');
+                    return fechaVenta === selectedDate.toLocaleDateString('es-MX');
+                });
+                
+                const totalVentas = ventasDelDia.reduce((sum, v) => sum + v.total, 0);
+                const totalGanancias = ventasDelDia.reduce((sum, v) => sum + (v.total - (v.costo * v.cantidad)), 0);
+                const productosVendidos = ventasDelDia.reduce((sum, v) => sum + v.cantidad, 0);
                 
                 setResumenDia({
                     totalVentas,
                     totalGanancias,
                     productosVendidos
+                });
+            };
+
+            // Función para comprimir imagen
+            const comprimirImagen = (file) => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            
+                            // Tamaño máximo 800x800
+                            const maxSize = 800;
+                            let width = img.width;
+                            let height = img.height;
+                            
+                            if (width > height) {
+                                if (width > maxSize) {
+                                    height = (height * maxSize) / width;
+                                    width = maxSize;
+                                }
+                            } else {
+                                if (height > maxSize) {
+                                    width = (width * maxSize) / height;
+                                    height = maxSize;
+                                }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            // Comprimir a JPEG con calidad 0.7
+                            resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
                 });
             };
 
@@ -182,6 +417,7 @@
                     precio: producto.precio,
                     costo: producto.costo,
                     total: ventaActual.total,
+                    fecha: selectedDate.toISOString(),
                     hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
                 };
 
@@ -197,37 +433,76 @@
 
                 // Limpiar venta actual
                 setVentaActual({ productoId: '', cantidad: 1, total: 0 });
+                
+                // Guardar inmediatamente
+                setTimeout(() => guardarDatos(), 100);
+                
                 alert('¡Venta registrada con éxito!');
             };
 
-            const agregarProducto = () => {
+            const agregarProducto = async () => {
                 if (!nuevoProducto.nombre || !nuevoProducto.cantidad || !nuevoProducto.costo || 
                     !nuevoProducto.precio || !nuevoProducto.vencimiento || !nuevoProducto.minimo) {
-                    alert('Por favor completa todos los campos');
+                    alert('Por favor completa todos los campos obligatorios');
                     return;
                 }
 
                 const producto = {
-                    id: Date.now(),
+                    id: productoEditando ? productoEditando.id : Date.now(),
                     nombre: nuevoProducto.nombre,
                     cantidad: parseInt(nuevoProducto.cantidad),
                     costo: parseFloat(nuevoProducto.costo),
                     precio: parseFloat(nuevoProducto.precio),
                     vencimiento: nuevoProducto.vencimiento,
-                    minimo: parseInt(nuevoProducto.minimo)
+                    minimo: parseInt(nuevoProducto.minimo),
+                    foto: nuevoProducto.foto || ''
                 };
 
-                setInventario([...inventario, producto]);
+                if (productoEditando) {
+                    // Editar producto existente
+                    setInventario(inventario.map(p => p.id === productoEditando.id ? producto : p));
+                    setProductoEditando(null);
+                } else {
+                    // Agregar nuevo producto
+                    setInventario([...inventario, producto]);
+                }
+
                 setNuevoProducto({
                     nombre: '',
                     cantidad: '',
                     costo: '',
                     precio: '',
                     vencimiento: '',
-                    minimo: ''
+                    minimo: '',
+                    foto: ''
                 });
                 setMostrarFormulario(false);
-                alert('¡Producto agregado con éxito!');
+                
+                // Guardar inmediatamente
+                setTimeout(() => guardarDatos(), 100);
+                
+                alert(productoEditando ? '¡Producto actualizado con éxito!' : '¡Producto agregado con éxito!');
+            };
+
+            const editarProducto = (producto) => {
+                setProductoEditando(producto);
+                setNuevoProducto({
+                    nombre: producto.nombre,
+                    cantidad: producto.cantidad.toString(),
+                    costo: producto.costo.toString(),
+                    precio: producto.precio.toString(),
+                    vencimiento: producto.vencimiento,
+                    minimo: producto.minimo.toString(),
+                    foto: producto.foto || ''
+                });
+                setMostrarFormulario(true);
+            };
+
+            const eliminarProducto = (id) => {
+                if (confirm('¿Estás seguro de eliminar este producto?')) {
+                    setInventario(inventario.filter(p => p.id !== id));
+                    setTimeout(() => guardarDatos(), 100);
+                }
             };
 
             const handleVentaChange = (field, value) => {
@@ -243,61 +518,179 @@
                 setVentaActual(updatedVenta);
             };
 
+            const handleImageUpload = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('La imagen es muy grande. Máximo 5MB');
+                        return;
+                    }
+                    
+                    try {
+                        const imagenComprimida = await comprimirImagen(file);
+                        setNuevoProducto({...nuevoProducto, foto: imagenComprimida});
+                    } catch (error) {
+                        alert('Error al procesar la imagen');
+                    }
+                }
+            };
+
+            // Prevenir que se cierre el teclado
+            const handleInputFocus = (ref) => {
+                if (ref && ref.current) {
+                    ref.current.focus();
+                    // Prevenir el scroll automático en iOS
+                    setTimeout(() => {
+                        ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            };
+
             // Componente de navegación
             const NavBar = () => (
-                <div className="bg-blue-600 text-white p-4 flex items-center justify-between shadow-lg">
-                    <button 
-                        onClick={() => setCurrentView('main')}
-                        className="text-2xl font-bold"
-                    >
-                        🏪 Mi Tiendita
-                    </button>
-                    <span className="text-lg">
-                        {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </span>
+                <div className="bg-blue-600 text-white p-4 shadow-lg relative">
+                    <div className="flex items-center justify-between">
+                        <button 
+                            onClick={() => setCurrentView('main')}
+                            className="text-2xl font-bold"
+                        >
+                            🏪 Mi Tiendita
+                        </button>
+                        <button
+                            onClick={() => setShowCalendar(!showCalendar)}
+                            className="text-lg px-3 py-1 bg-blue-700 rounded-lg hover:bg-blue-800 transition"
+                        >
+                            📅 {selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </button>
+                    </div>
+                    
+                    {/* Calendario desplegable */}
+                    {showCalendar && (
+                        <div className="absolute top-full right-4 mt-2 bg-white rounded-xl shadow-xl p-4 z-50 fade-in">
+                            <CalendarioComponent />
+                        </div>
+                    )}
                 </div>
             );
 
+            // Componente de Calendario
+            const CalendarioComponent = () => {
+                const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                const mesActual = selectedDate.getMonth();
+                const añoActual = selectedDate.getFullYear();
+                
+                // Obtener días del mes
+                const primerDia = new Date(añoActual, mesActual, 1);
+                const ultimoDia = new Date(añoActual, mesActual + 1, 0);
+                const diasEnMes = ultimoDia.getDate();
+                const empiezaEn = primerDia.getDay();
+                
+                // Obtener ventas del histórico
+                const historico = JSON.parse(localStorage.getItem('miTiendita_historico') || '{}');
+                
+                const cambiarMes = (direccion) => {
+                    const nuevaFecha = new Date(selectedDate);
+                    nuevaFecha.setMonth(nuevaFecha.getMonth() + direccion);
+                    setSelectedDate(nuevaFecha);
+                };
+                
+                const seleccionarDia = (dia) => {
+                    const nuevaFecha = new Date(añoActual, mesActual, dia);
+                    setSelectedDate(nuevaFecha);
+                    setShowCalendar(false);
+                    cargarDatosDelDia();
+                };
+                
+                const tienVentas = (dia) => {
+                    const fecha = new Date(añoActual, mesActual, dia).toLocaleDateString('es-MX');
+                    return historico[fecha] && historico[fecha].ventas && historico[fecha].ventas.length > 0;
+                };
+                
+                const getMontoVentas = (dia) => {
+                    const fecha = new Date(añoActual, mesActual, dia).toLocaleDateString('es-MX');
+                    if (historico[fecha] && historico[fecha].resumen) {
+                        return historico[fecha].resumen.totalVentas;
+                    }
+                    return 0;
+                };
+                
+                return (
+                    <div className="w-80">
+                        <div className="flex justify-between items-center mb-4">
+                            <button
+                                onClick={() => cambiarMes(-1)}
+                                className="text-blue-600 p-2 hover:bg-blue-100 rounded"
+                            >
+                                ←
+                            </button>
+                            <h3 className="text-lg font-bold text-gray-800">
+                                {selectedDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
+                            </h3>
+                            <button
+                                onClick={() => cambiarMes(1)}
+                                className="text-blue-600 p-2 hover:bg-blue-100 rounded"
+                            >
+                                →
+                            </button>
+                        </div>
+                        
+                        <div className="calendar-grid mb-2">
+                            {diasSemana.map(dia => (
+                                <div key={dia} className="text-center text-xs font-bold text-gray-600">
+                                    {dia}
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="calendar-grid">
+                            {[...Array(empiezaEn)].map((_, i) => (
+                                <div key={`empty-${i}`} />
+                            ))}
+                            
+                            {[...Array(diasEnMes)].map((_, i) => {
+                                const dia = i + 1;
+                                const esHoy = new Date().toDateString() === new Date(añoActual, mesActual, dia).toDateString();
+                                const estaSeleccionado = selectedDate.getDate() === dia;
+                                const ventas = tienVentas(dia);
+                                const monto = getMontoVentas(dia);
+                                
+                                return (
+                                    <div
+                                        key={dia}
+                                        onClick={() => seleccionarDia(dia)}
+                                        className={`calendar-day ${ventas ? 'has-sales' : 'bg-gray-100'} 
+                                                   ${estaSeleccionado ? 'selected' : ''} 
+                                                   ${esHoy ? 'ring-2 ring-blue-400' : ''}`}
+                                    >
+                                        <span className="font-bold">{dia}</span>
+                                        {ventas && (
+                                            <span className="text-xs">
+                                                ${monto.toFixed(0)}
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        
+                        {!isPremium && (
+                            <div className="mt-4 p-3 bg-yellow-100 rounded-lg text-sm">
+                                <p className="text-yellow-800">
+                                    <span className="premium-badge mr-2">PREMIUM</span>
+                                    Actualiza para ver 3 meses de histórico
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
             // Vista principal
             const MainView = () => (
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 fade-in">
                     <div className="bg-white rounded-2xl shadow-xl p-6">
-                        <h1 className="text-3xl font-bold text-center mb-2">¡Bienvenido!</h1>
+                        <h1 className="text-3xl font-bold text-center mb-2">¡Bienvenido Emprendedor!</h1>
                         <p className="text-center text-gray-600">¿Qué quieres hacer hoy?</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => setCurrentView('ventas')}
-                            className="bg-green-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-green-600 transition"
-                        >
-                            <span className="text-4xl">💰</span>
-                            <span className="text-xl font-bold">Registrar Venta</span>
-                        </button>
-
-                        <button
-                            onClick={() => setCurrentView('inventario')}
-                            className="bg-blue-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-blue-600 transition"
-                        >
-                            <span className="text-4xl">📦</span>
-                            <span className="text-xl font-bold">Ver Inventario</span>
-                        </button>
-
-                        <button
-                            onClick={() => setCurrentView('compras')}
-                            className="bg-purple-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-purple-600 transition"
-                        >
-                            <span className="text-4xl">🛒</span>
-                            <span className="text-xl font-bold">Lista Compras</span>
-                        </button>
-
-                        <button
-                            onClick={() => setCurrentView('dinero')}
-                            className="bg-yellow-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-yellow-600 transition"
-                        >
-                            <span className="text-4xl">💸</span>
-                            <span className="text-xl font-bold">Mi Dinero</span>
-                        </button>
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -322,7 +715,7 @@
 
             // Vista de ventas
             const VentasView = () => (
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 fade-in">
                     <h1 className="text-2xl font-bold">💰 Registrar Venta</h1>
 
                     <div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
@@ -382,9 +775,11 @@
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-xl p-6">
-                        <h2 className="text-xl font-bold mb-4">📋 Ventas de Hoy</h2>
+                        <h2 className="text-xl font-bold mb-4">
+                            📋 Ventas del {selectedDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}
+                        </h2>
                         {ventas.length === 0 ? (
-                            <p className="text-gray-500 text-center">No hay ventas registradas hoy</p>
+                            <p className="text-gray-500 text-center">No hay ventas registradas en esta fecha</p>
                         ) : (
                             <div className="space-y-2">
                                 {ventas.map(venta => (
@@ -406,11 +801,23 @@
 
             // Vista de inventario
             const InventarioView = () => (
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 fade-in">
                     <div className="flex justify-between items-center">
                         <h1 className="text-2xl font-bold">📦 Mi Inventario</h1>
                         <button
-                            onClick={() => setMostrarFormulario(true)}
+                            onClick={() => {
+                                setProductoEditando(null);
+                                setNuevoProducto({
+                                    nombre: '',
+                                    cantidad: '',
+                                    costo: '',
+                                    precio: '',
+                                    vencimiento: '',
+                                    minimo: '',
+                                    foto: ''
+                                });
+                                setMostrarFormulario(true);
+                            }}
                             className="bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 hover:bg-blue-600"
                         >
                             <span>➕</span>
@@ -430,88 +837,127 @@
 
                             return (
                                 <div key={producto.id} className="bg-white rounded-2xl shadow-xl p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-lg font-bold">{producto.nombre}</h3>
-                                        <span className={`px-3 py-1 rounded-full text-sm ${colorVencimiento}`}>
-                                            {diasVencimiento} días
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                            <span className="text-gray-600">Stock:</span>
-                                            <span className={`font-bold ml-2 ${stockBajo ? 'text-red-600' : ''}`}>
-                                                {producto.cantidad} unidades
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-600">Precio:</span>
-                                            <span className="font-bold ml-2">${producto.precio}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-600">Costo:</span>
-                                            <span className="ml-2">${producto.costo}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-600">Mínimo:</span>
-                                            <span className="ml-2">{producto.minimo}</span>
-                                        </div>
-                                    </div>
+                                    <div className="flex items-start space-x-4">
+                                        {producto.foto && (
+                                            <img 
+                                                src={producto.foto} 
+                                                alt={producto.nombre}
+                                                className="w-20 h-20 object-cover rounded-lg"
+                                            />
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="text-lg font-bold">{producto.nombre}</h3>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className={`px-3 py-1 rounded-full text-sm ${colorVencimiento}`}>
+                                                        {diasVencimiento} días
+                                                    </span>
+                                                    <button
+                                                        onClick={() => editarProducto(producto)}
+                                                        className="text-blue-600 hover:text-blue-800"
+                                                        title="Editar"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    <button
+                                                        onClick={() => eliminarProducto(producto.id)}
+                                                        className="text-red-600 hover:text-red-800"
+                                                        title="Eliminar"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div>
+                                                    <span className="text-gray-600">Stock:</span>
+                                                    <span className={`font-bold ml-2 ${stockBajo ? 'text-red-600' : ''}`}>
+                                                        {producto.cantidad} unidades
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-600">Precio:</span>
+                                                    <span className="font-bold ml-2">${producto.precio}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-600">Costo:</span>
+                                                    <span className="ml-2">${producto.costo}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-600">Mínimo:</span>
+                                                    <span className="ml-2">{producto.minimo}</span>
+                                                </div>
+                                            </div>
 
-                                    {stockBajo && (
-                                        <div className="mt-3 bg-red-100 text-red-700 p-2 rounded-lg text-sm">
-                                            ⚠️ Stock bajo - Necesitas comprar más
+                                            {stockBajo && (
+                                                <div className="mt-3 bg-red-100 text-red-700 p-2 rounded-lg text-sm">
+                                                    ⚠️ Stock bajo - Necesitas comprar más
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             );
                         })
                     )}
 
-                    {/* Modal de nuevo producto */}
+                    {/* Modal de nuevo/editar producto */}
                     {mostrarFormulario && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
-                                <h2 className="text-xl font-bold">Agregar Nuevo Producto</h2>
+                            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+                                <h2 className="text-xl font-bold">
+                                    {productoEditando ? 'Editar Producto' : 'Agregar Nuevo Producto'}
+                                </h2>
                                 
                                 <input
+                                    ref={inputRefs.nombre}
                                     type="text"
                                     placeholder="Nombre del producto"
                                     value={nuevoProducto.nombre}
                                     onChange={(e) => setNuevoProducto({...nuevoProducto, nombre: e.target.value})}
+                                    onFocus={() => handleInputFocus(inputRefs.nombre)}
                                     className="w-full p-3 border-2 rounded-xl"
                                 />
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <input
+                                        ref={inputRefs.cantidad}
                                         type="number"
                                         placeholder="Cantidad"
                                         value={nuevoProducto.cantidad}
                                         onChange={(e) => setNuevoProducto({...nuevoProducto, cantidad: e.target.value})}
+                                        onFocus={() => handleInputFocus(inputRefs.cantidad)}
                                         className="p-3 border-2 rounded-xl"
                                     />
                                     <input
+                                        ref={inputRefs.minimo}
                                         type="number"
                                         placeholder="Stock mínimo"
                                         value={nuevoProducto.minimo}
                                         onChange={(e) => setNuevoProducto({...nuevoProducto, minimo: e.target.value})}
+                                        onFocus={() => handleInputFocus(inputRefs.minimo)}
                                         className="p-3 border-2 rounded-xl"
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <input
+                                        ref={inputRefs.costo}
                                         type="number"
                                         placeholder="Costo $"
                                         value={nuevoProducto.costo}
                                         onChange={(e) => setNuevoProducto({...nuevoProducto, costo: e.target.value})}
+                                        onFocus={() => handleInputFocus(inputRefs.costo)}
                                         className="p-3 border-2 rounded-xl"
                                     />
                                     <input
+                                        ref={inputRefs.precio}
                                         type="number"
                                         placeholder="Precio $"
                                         value={nuevoProducto.precio}
                                         onChange={(e) => setNuevoProducto({...nuevoProducto, precio: e.target.value})}
+                                        onFocus={() => handleInputFocus(inputRefs.precio)}
                                         className="p-3 border-2 rounded-xl"
                                     />
                                 </div>
@@ -523,23 +969,51 @@
                                     className="w-full p-3 border-2 rounded-xl"
                                 />
 
+                                {/* Campo de foto opcional */}
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-semibold">Foto (opcional):</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        className="w-full p-2 border-2 rounded-xl text-sm"
+                                    />
+                                    {nuevoProducto.foto && (
+                                        <div className="relative inline-block">
+                                            <img 
+                                                src={nuevoProducto.foto} 
+                                                alt="Vista previa"
+                                                className="w-32 h-32 object-cover rounded-lg"
+                                            />
+                                            <button
+                                                onClick={() => setNuevoProducto({...nuevoProducto, foto: ''})}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="flex space-x-4">
                                     <button
                                         onClick={agregarProducto}
                                         className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold hover:bg-green-600"
                                     >
-                                        ✅ Agregar
+                                        ✅ {productoEditando ? 'Actualizar' : 'Agregar'}
                                     </button>
                                     <button
                                         onClick={() => {
                                             setMostrarFormulario(false);
+                                            setProductoEditando(null);
                                             setNuevoProducto({
                                                 nombre: '',
                                                 cantidad: '',
                                                 costo: '',
                                                 precio: '',
                                                 vencimiento: '',
-                                                minimo: ''
+                                                minimo: '',
+                                                foto: ''
                                             });
                                         }}
                                         className="flex-1 bg-gray-500 text-white p-3 rounded-xl font-bold hover:bg-gray-600"
@@ -563,11 +1037,23 @@
                 });
 
                 return (
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-6 fade-in">
                         <div className="flex justify-between items-center">
                             <h1 className="text-2xl font-bold">🛒 Lista de Compras</h1>
                             <button
-                                onClick={() => setMostrarFormulario(true)}
+                                onClick={() => {
+                                    setProductoEditando(null);
+                                    setNuevoProducto({
+                                        nombre: '',
+                                        cantidad: '',
+                                        costo: '',
+                                        precio: '',
+                                        vencimiento: '',
+                                        minimo: '',
+                                        foto: ''
+                                    });
+                                    setMostrarFormulario(true);
+                                }}
                                 className="bg-purple-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 hover:bg-purple-600"
                             >
                                 <span>➕</span>
@@ -594,23 +1080,34 @@
 
                                     return (
                                         <div key={producto.id} className="bg-white rounded-2xl shadow-xl p-6">
-                                            <h3 className="text-lg font-bold mb-2">{producto.nombre}</h3>
-                                            
-                                            <div className="space-y-2">
-                                                {stockBajo && (
-                                                    <div className="bg-red-100 text-red-700 p-3 rounded-lg">
-                                                        ⚠️ Stock bajo: Solo te quedan {producto.cantidad} unidades
-                                                    </div>
+                                            <div className="flex items-start space-x-4">
+                                                {producto.foto && (
+                                                    <img 
+                                                        src={producto.foto} 
+                                                        alt={producto.nombre}
+                                                        className="w-16 h-16 object-cover rounded-lg"
+                                                    />
                                                 )}
-                                                
-                                                {diasVencimiento <= 15 && (
-                                                    <div className="bg-yellow-100 text-yellow-700 p-3 rounded-lg">
-                                                        ⏰ Vence en {diasVencimiento} días
-                                                    </div>
-                                                )}
+                                                <div className="flex-1">
+                                                    <h3 className="text-lg font-bold mb-2">{producto.nombre}</h3>
+                                                    
+                                                    <div className="space-y-2">
+                                                        {stockBajo && (
+                                                            <div className="bg-red-100 text-red-700 p-3 rounded-lg">
+                                                                ⚠️ Stock bajo: Solo te quedan {producto.cantidad} unidades
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {diasVencimiento <= 15 && (
+                                                            <div className="bg-yellow-100 text-yellow-700 p-3 rounded-lg">
+                                                                ⏰ Vence en {diasVencimiento} días
+                                                            </div>
+                                                        )}
 
-                                                <div className="bg-blue-100 text-blue-700 p-3 rounded-lg">
-                                                    💡 Compra al menos {cantidadComprar} unidades
+                                                        <div className="bg-blue-100 text-blue-700 p-3 rounded-lg">
+                                                            💡 Compra al menos {cantidadComprar} unidades
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -622,89 +1119,6 @@
                                     <p className="italic">"Mija, acuérdate de comparar precios en el mercado y con los mayoristas. A veces te conviene comprar de a poquito si no tienes mucho dinero, pero si puedes, compra más cantidad para que te salga más barato."</p>
                                 </div>
                             </>
-                        )}
-
-                        {/* Reutilizar el modal de nuevo producto */}
-                        {mostrarFormulario && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
-                                    <h2 className="text-xl font-bold">Agregar Nuevo Producto</h2>
-                                    
-                                    <input
-                                        type="text"
-                                        placeholder="Nombre del producto"
-                                        value={nuevoProducto.nombre}
-                                        onChange={(e) => setNuevoProducto({...nuevoProducto, nombre: e.target.value})}
-                                        className="w-full p-3 border-2 rounded-xl"
-                                    />
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input
-                                            type="number"
-                                            placeholder="Cantidad"
-                                            value={nuevoProducto.cantidad}
-                                            onChange={(e) => setNuevoProducto({...nuevoProducto, cantidad: e.target.value})}
-                                            className="p-3 border-2 rounded-xl"
-                                        />
-                                        <input
-                                            type="number"
-                                            placeholder="Stock mínimo"
-                                            value={nuevoProducto.minimo}
-                                            onChange={(e) => setNuevoProducto({...nuevoProducto, minimo: e.target.value})}
-                                            className="p-3 border-2 rounded-xl"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <input
-                                            type="number"
-                                            placeholder="Costo $"
-                                            value={nuevoProducto.costo}
-                                            onChange={(e) => setNuevoProducto({...nuevoProducto, costo: e.target.value})}
-                                            className="p-3 border-2 rounded-xl"
-                                        />
-                                        <input
-                                            type="number"
-                                            placeholder="Precio $"
-                                            value={nuevoProducto.precio}
-                                            onChange={(e) => setNuevoProducto({...nuevoProducto, precio: e.target.value})}
-                                            className="p-3 border-2 rounded-xl"
-                                        />
-                                    </div>
-
-                                    <input
-                                        type="date"
-                                        value={nuevoProducto.vencimiento}
-                                        onChange={(e) => setNuevoProducto({...nuevoProducto, vencimiento: e.target.value})}
-                                        className="w-full p-3 border-2 rounded-xl"
-                                    />
-
-                                    <div className="flex space-x-4">
-                                        <button
-                                            onClick={agregarProducto}
-                                            className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold hover:bg-green-600"
-                                        >
-                                            ✅ Agregar
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setMostrarFormulario(false);
-                                                setNuevoProducto({
-                                                    nombre: '',
-                                                    cantidad: '',
-                                                    costo: '',
-                                                    precio: '',
-                                                    vencimiento: '',
-                                                    minimo: ''
-                                                });
-                                            }}
-                                            className="flex-1 bg-gray-500 text-white p-3 rounded-xl font-bold hover:bg-gray-600"
-                                        >
-                                            ❌ Cancelar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
                         )}
                     </div>
                 );
@@ -755,13 +1169,37 @@
                     return '🎉 ¡Excelente margen!';
                 };
 
+                // Análisis premium
+                const getAnalisisPremium = () => {
+                    if (!isPremium) return null;
+                    
+                    const historico = JSON.parse(localStorage.getItem('miTiendita_historico') || '{}');
+                    const ultimosDias = Object.entries(historico).slice(-7);
+                    
+                    const promedioSemanal = ultimosDias.reduce((sum, [_, data]) => 
+                        sum + (data.resumen?.totalVentas || 0), 0) / ultimosDias.length;
+                    
+                    const mejorDia = ultimosDias.reduce((mejor, [fecha, data]) => {
+                        if (!mejor || (data.resumen?.totalVentas || 0) > mejor.venta) {
+                            return { fecha, venta: data.resumen?.totalVentas || 0 };
+                        }
+                        return mejor;
+                    }, null);
+                    
+                    return { promedioSemanal, mejorDia };
+                };
+
+                const analisis = getAnalisisPremium();
+
                 return (
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-6 fade-in">
                         <h1 className="text-2xl font-bold">💸 Mi Dinero</h1>
 
                         {/* Resumen del día */}
                         <div className="bg-white rounded-2xl shadow-xl p-6">
-                            <h2 className="text-xl font-bold mb-4">📊 Resumen de Hoy</h2>
+                            <h2 className="text-xl font-bold mb-4">
+                                📊 Resumen del {selectedDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}
+                            </h2>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-green-100 p-4 rounded-xl text-center">
                                     <p className="text-3xl font-bold text-green-600">${resumenDia.totalVentas.toFixed(2)}</p>
@@ -784,6 +1222,31 @@
                                 </div>
                             </div>
                         </div>
+
+                        {/* Análisis Premium */}
+                        {isPremium && analisis && (
+                            <div className="bg-gradient-to-r from-yellow-100 to-amber-100 rounded-2xl shadow-xl p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-bold">📈 Análisis Premium</h2>
+                                    <span className="premium-badge">PRO</span>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <div className="bg-white bg-opacity-50 p-3 rounded-lg">
+                                        <p className="text-sm text-gray-600">Promedio semanal:</p>
+                                        <p className="text-2xl font-bold">${analisis.promedioSemanal.toFixed(2)}</p>
+                                    </div>
+                                    
+                                    {analisis.mejorDia && (
+                                        <div className="bg-white bg-opacity-50 p-3 rounded-lg">
+                                            <p className="text-sm text-gray-600">Mejor día de la semana:</p>
+                                            <p className="font-bold">{new Date(analisis.mejorDia.fecha).toLocaleDateString('es-MX', { weekday: 'long' })}</p>
+                                            <p className="text-lg">${analisis.mejorDia.venta.toFixed(2)}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Calculadora de márgenes */}
                         <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -880,6 +1343,34 @@
                                 }
                             </p>
                         </div>
+
+                        {/* Promoción Premium */}
+                        {!isPremium && (
+                            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl shadow-xl p-6">
+                                <h3 className="text-lg font-bold mb-3">🌟 Actualiza a Premium</h3>
+                                <ul className="space-y-2 mb-4">
+                                    <li className="flex items-center">
+                                        <span className="text-green-600 mr-2">✓</span>
+                                        <span>Análisis detallado de ventas</span>
+                                    </li>
+                                    <li className="flex items-center">
+                                        <span className="text-green-600 mr-2">✓</span>
+                                        <span>3 meses de histórico completo</span>
+                                    </li>
+                                    <li className="flex items-center">
+                                        <span className="text-green-600 mr-2">✓</span>
+                                        <span>Sistema de fiados (próximamente)</span>
+                                    </li>
+                                    <li className="flex items-center">
+                                        <span className="text-green-600 mr-2">✓</span>
+                                        <span>Respaldo en la nube</span>
+                                    </li>
+                                </ul>
+                                <button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-xl font-bold">
+                                    Actualizar por $49 MXN/mes
+                                </button>
+                            </div>
+                        )}
                     </div>
                 );
             };
@@ -928,3 +1419,37 @@
     </script>
 </body>
 </html>
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => setCurrentView('ventas')}
+                            className="bg-green-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-green-600 transition"
+                        >
+                            <span className="text-4xl">💰</span>
+                            <span className="text-xl font-bold">Registrar Venta</span>
+                        </button>
+
+                        <button
+                            onClick={() => setCurrentView('inventario')}
+                            className="bg-blue-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-blue-600 transition"
+                        >
+                            <span className="text-4xl">📦</span>
+                            <span className="text-xl font-bold">Ver Inventario</span>
+                        </button>
+
+                        <button
+                            onClick={() => setCurrentView('compras')}
+                            className="bg-purple-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-purple-600 transition"
+                        >
+                            <span className="text-4xl">🛒</span>
+                            <span className="text-xl font-bold">Lista Compras</span>
+                        </button>
+
+                        <button
+                            onClick={() => setCurrentView('dinero')}
+                            className="bg-yellow-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-yellow-600 transition relative"
+                        >
+                            <span className="text-4xl">💸</span>
+                            <span className="text-xl font-bold">Mi Dinero</span>
+                            {isPremium && <span className="premium-badge absolute top-2 right-2">PRO</span>}
+                        </button>
+                    </div>
