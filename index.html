@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
     <title>Mi Tiendita</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Mi Tiendita">
+    
+    <!-- Manifest inline para PWA -->
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIk1pIFRpZW5kaXRhIiwKICAic2hvcnRfbmFtZSI6ICJUaWVuZGl0YSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZmZmZmZmIiwKICAidGhlbWVfY29sb3IiOiAiIzI1NjNlYiIsCiAgIm9yaWVudGF0aW9uIjogInBvcnRyYWl0Igp9">
+    
     <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.22.5/babel.min.js"></script>
@@ -13,19 +24,70 @@
             font-family: Arial, sans-serif;
             background: #ffffff;
             margin: 0;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
-        input, select {
+        
+        /* Fix para mantener el teclado abierto */
+        input, select, textarea {
             font-size: 16px !important;
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+        
+        /* Prevenir el cierre del teclado */
+        .no-blur {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
         }
     </style>
 </head>
 <body>
     <div id="root">
-        <div style="text-align: center; padding: 50px;">Cargando...</div>
+        <div style="text-align: center; padding: 50px;">Cargando Mi Tiendita...</div>
     </div>
     
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useCallback } = React;
+
+        // Sistema de almacenamiento robusto
+        const Storage = {
+            setItem: (key, value) => {
+                try {
+                    // Intentar localStorage primero
+                    if (typeof(Storage) !== "undefined" && localStorage) {
+                        localStorage.setItem(key, value);
+                        return true;
+                    }
+                } catch (e) {
+                    console.log('localStorage no disponible, usando memoria');
+                }
+                
+                // Fallback a memoria
+                if (!window.appStorage) window.appStorage = {};
+                window.appStorage[key] = value;
+                return true;
+            },
+            
+            getItem: (key) => {
+                try {
+                    // Intentar localStorage primero
+                    if (typeof(Storage) !== "undefined" && localStorage) {
+                        const item = localStorage.getItem(key);
+                        if (item !== null) return item;
+                    }
+                } catch (e) {
+                    console.log('Usando memoria como fallback');
+                }
+                
+                // Fallback a memoria
+                if (window.appStorage && window.appStorage[key]) {
+                    return window.appStorage[key];
+                }
+                return null;
+            }
+        };
 
         function App() {
             const [currentView, setCurrentView] = useState('main');
@@ -66,39 +128,37 @@
 
             // Cargar datos al iniciar
             useEffect(() => {
-                try {
-                    const invGuardado = localStorage.getItem('tiendita_inventario');
-                    if (invGuardado) {
+                const invGuardado = Storage.getItem('tiendita_inventario');
+                if (invGuardado) {
+                    try {
                         setInventario(JSON.parse(invGuardado));
+                    } catch (e) {
+                        console.log('Error parseando inventario');
                     }
-                    
-                    const hoy = new Date().toDateString();
-                    const ventasGuardadas = localStorage.getItem('tiendita_ventas_' + hoy);
-                    if (ventasGuardadas) {
+                }
+                
+                const hoy = new Date().toDateString();
+                const ventasGuardadas = Storage.getItem('tiendita_ventas_' + hoy);
+                if (ventasGuardadas) {
+                    try {
                         setVentas(JSON.parse(ventasGuardadas));
+                    } catch (e) {
+                        console.log('Error parseando ventas');
                     }
-                } catch (error) {
-                    console.log('Error cargando datos');
                 }
             }, []);
 
             // Guardar inventario
             useEffect(() => {
-                try {
-                    localStorage.setItem('tiendita_inventario', JSON.stringify(inventario));
-                } catch (error) {
-                    console.log('Error guardando inventario');
+                if (inventario && inventario.length > 0) {
+                    Storage.setItem('tiendita_inventario', JSON.stringify(inventario));
                 }
             }, [inventario]);
 
             // Guardar ventas
             useEffect(() => {
-                try {
-                    const hoy = new Date().toDateString();
-                    localStorage.setItem('tiendita_ventas_' + hoy, JSON.stringify(ventas));
-                } catch (error) {
-                    console.log('Error guardando ventas');
-                }
+                const hoy = new Date().toDateString();
+                Storage.setItem('tiendita_ventas_' + hoy, JSON.stringify(ventas));
             }, [ventas]);
 
             // Actualizar resumen
@@ -186,6 +246,15 @@
                 setProductoEditando(null);
             };
 
+            // Handlers optimizados para evitar re-renders
+            const updateNuevoProducto = useCallback((field, value) => {
+                setNuevoProducto(prev => ({ ...prev, [field]: value }));
+            }, []);
+
+            const updateCalculadora = useCallback((field, value) => {
+                setCalculadora(prev => ({ ...prev, [field]: value }));
+            }, []);
+
             const MainView = () => (
                 <div className="p-4">
                     <div className="bg-gray-50 rounded-xl p-4 mb-4">
@@ -233,25 +302,28 @@
                         <h2 className="font-bold mb-2">🧮 Calculadora</h2>
                         <div className="grid grid-cols-3 gap-2 mb-2">
                             <input 
-                                type="number" 
+                                type="tel"
+                                inputMode="decimal"
                                 placeholder="Costo"
                                 value={calculadora.costo}
-                                onChange={(e) => setCalculadora({...calculadora, costo: e.target.value})}
-                                className="p-2 border rounded text-sm"
+                                onChange={(e) => updateCalculadora('costo', e.target.value)}
+                                className="p-2 border rounded text-sm no-blur"
                             />
                             <input 
-                                type="number" 
+                                type="tel"
+                                inputMode="decimal" 
                                 placeholder="Precio"
                                 value={calculadora.precio}
-                                onChange={(e) => setCalculadora({...calculadora, precio: e.target.value})}
-                                className="p-2 border rounded text-sm"
+                                onChange={(e) => updateCalculadora('precio', e.target.value)}
+                                className="p-2 border rounded text-sm no-blur"
                             />
                             <input 
-                                type="number" 
+                                type="tel"
+                                inputMode="numeric"
                                 placeholder="Cant"
                                 value={calculadora.cantidad}
-                                onChange={(e) => setCalculadora({...calculadora, cantidad: e.target.value})}
-                                className="p-2 border rounded text-sm"
+                                onChange={(e) => updateCalculadora('cantidad', e.target.value)}
+                                className="p-2 border rounded text-sm no-blur"
                             />
                         </div>
                         {calculadora.costo && calculadora.precio && (
@@ -261,6 +333,17 @@
                             </div>
                         )}
                     </div>
+                    
+                    <button 
+                        onClick={() => {
+                            const test = Storage.setItem('test', 'ok');
+                            const result = Storage.getItem('test');
+                            alert(`Almacenamiento: ${result === 'ok' ? 'Funcionando ✅' : 'Con problemas ❌'}`);
+                        }}
+                        className="mt-4 bg-gray-300 text-gray-700 p-2 rounded text-sm w-full"
+                    >
+                        Probar Almacenamiento
+                    </button>
                 </div>
             );
 
@@ -310,10 +393,19 @@
                                     -
                                 </button>
                                 <input 
-                                    type="number"
+                                    type="tel"
+                                    inputMode="numeric"
                                     value={ventaActual.cantidad}
-                                    readOnly
-                                    className="w-16 p-2 text-center border rounded"
+                                    onChange={(e) => {
+                                        const cant = parseInt(e.target.value) || 0;
+                                        const prod = inventario.find(p => p.id === parseInt(ventaActual.productoId));
+                                        setVentaActual({
+                                            ...ventaActual,
+                                            cantidad: cant,
+                                            total: prod ? prod.precio * cant : 0
+                                        });
+                                    }}
+                                    className="w-20 p-2 text-center border rounded no-blur"
                                 />
                                 <button 
                                     onClick={() => {
@@ -432,7 +524,7 @@
                     </div>
                     
                     {mostrarFormulario && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                             <div className="bg-white rounded-xl p-4 w-full max-w-sm">
                                 <h2 className="font-bold mb-3">
                                     {productoEditando ? 'Editar' : 'Nuevo'} Producto
@@ -442,39 +534,43 @@
                                     type="text"
                                     placeholder="Nombre"
                                     value={nuevoProducto.nombre}
-                                    onChange={(e) => setNuevoProducto({...nuevoProducto, nombre: e.target.value})}
-                                    className="w-full p-2 border rounded mb-2"
+                                    onChange={(e) => updateNuevoProducto('nombre', e.target.value)}
+                                    className="w-full p-2 border rounded mb-2 no-blur"
+                                    autoComplete="off"
                                 />
                                 
                                 <div className="grid grid-cols-2 gap-2 mb-2">
                                     <input 
-                                        type="number"
+                                        type="tel"
+                                        inputMode="numeric"
                                         placeholder="Cantidad"
                                         value={nuevoProducto.cantidad}
-                                        onChange={(e) => setNuevoProducto({...nuevoProducto, cantidad: e.target.value})}
-                                        className="p-2 border rounded"
+                                        onChange={(e) => updateNuevoProducto('cantidad', e.target.value)}
+                                        className="p-2 border rounded no-blur"
                                     />
                                     <input 
-                                        type="number"
+                                        type="tel"
+                                        inputMode="decimal"
                                         placeholder="Costo"
                                         value={nuevoProducto.costo}
-                                        onChange={(e) => setNuevoProducto({...nuevoProducto, costo: e.target.value})}
-                                        className="p-2 border rounded"
+                                        onChange={(e) => updateNuevoProducto('costo', e.target.value)}
+                                        className="p-2 border rounded no-blur"
                                     />
                                 </div>
                                 
                                 <div className="grid grid-cols-2 gap-2 mb-3">
                                     <input 
-                                        type="number"
+                                        type="tel"
+                                        inputMode="decimal"
                                         placeholder="Precio"
                                         value={nuevoProducto.precio}
-                                        onChange={(e) => setNuevoProducto({...nuevoProducto, precio: e.target.value})}
-                                        className="p-2 border rounded"
+                                        onChange={(e) => updateNuevoProducto('precio', e.target.value)}
+                                        className="p-2 border rounded no-blur"
                                     />
                                     <input 
                                         type="date"
                                         value={nuevoProducto.vencimiento}
-                                        onChange={(e) => setNuevoProducto({...nuevoProducto, vencimiento: e.target.value})}
+                                        onChange={(e) => updateNuevoProducto('vencimiento', e.target.value)}
                                         className="p-2 border rounded"
                                     />
                                 </div>
@@ -532,6 +628,23 @@
                     )}
                 </div>
             );
+        }
+
+        // Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('data:text/javascript;base64,' + btoa(`
+                    self.addEventListener('install', e => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', e => {
+                        e.waitUntil(clients.claim());
+                    });
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(fetch(e.request));
+                    });
+                `)).then(reg => console.log('SW registrado')).catch(err => console.log('SW error:', err));
+            });
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
