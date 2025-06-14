@@ -9,27 +9,21 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{font-family:Arial,sans-serif;background:#f0f4f8;margin:0;position:relative}
-.mexican-pattern{position:fixed;inset:0;opacity:0.03;pointer-events:none;z-index:0;
-background:repeating-linear-gradient(45deg,#e74c3c 0,#e74c3c 10px,transparent 10px,transparent 20px),
-repeating-linear-gradient(-45deg,#3498db 0,#3498db 10px,transparent 10px,transparent 20px)}
-.talavera-border{position:absolute;top:0;left:0;right:0;height:8px;opacity:0.1;
-background:repeating-linear-gradient(90deg,#2980b9 0 10px,#e74c3c 10px 20px,#f39c12 20px 30px,#27ae60 30px 40px)}
-#root{min-height:100vh;position:relative;z-index:1}
-input,select{font-size:16px!important;touch-action:manipulation}
-.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.calendar-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-border-radius:8px;font-size:12px;cursor:pointer;transition:all 0.2s}
-.calendar-day:hover{transform:scale(1.05)}
-.calendar-day.has-sales{background:#10b981;color:white}
-.calendar-day.selected{border:2px solid #3b82f6}
-.premium-badge{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:white;
-padding:2px 8px;border-radius:12px;font-size:10px;font-weight:bold}
+body{font-family:Arial,sans-serif;background:#ffffff;margin:0}
+#root{min-height:100vh}
+input,select,textarea{
+font-size:16px!important;
+-webkit-appearance:none;
+-moz-appearance:none;
+appearance:none;
+}
+input:focus,select:focus,textarea:focus{
+outline:2px solid #3b82f6;
+outline-offset:2px;
+}
 </style>
 </head>
 <body>
-<div class="mexican-pattern"></div>
-<div class="talavera-border"></div>
 <div id="root">Cargando...</div>
 <script type="text/babel">
 const {useState,useEffect,useRef}=React;
@@ -38,97 +32,91 @@ function App(){
 const [currentView,setCurrentView]=useState('main');
 const [ventas,setVentas]=useState([]);
 const [inventario,setInventario]=useState([]);
-const [selectedDate,setSelectedDate]=useState(new Date());
-const [showCalendar,setShowCalendar]=useState(false);
-const [isPremium,setIsPremium]=useState(false);
 const [ventaActual,setVentaActual]=useState({productoId:'',cantidad:1,total:0});
-const [nuevoProducto,setNuevoProducto]=useState({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
+const [nuevoProducto,setNuevoProducto]=useState({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
 const [productoEditando,setProductoEditando]=useState(null);
 const [mostrarFormulario,setMostrarFormulario]=useState(false);
 const [resumenDia,setResumenDia]=useState({totalVentas:0,totalGanancias:0,productosVendidos:0});
 const [datosListos,setDatosListos]=useState(false);
 
+// Referencias para mantener focus en iOS
+const nombreRef=useRef(null);
+const cantidadRef=useRef(null);
+const costoRef=useRef(null);
+const precioRef=useRef(null);
+
 const productosIniciales=[
-{id:1,nombre:'Coca-Cola 600ml',cantidad:24,costo:12,precio:18,vencimiento:'2025-08-15',minimo:10,foto:''},
-{id:2,nombre:'Sabritas Original',cantidad:15,costo:8,precio:15,vencimiento:'2025-07-20',minimo:5,foto:''},
-{id:3,nombre:'Pan Bimbo Grande',cantidad:8,costo:25,precio:35,vencimiento:'2025-06-25',minimo:6,foto:''},
-{id:4,nombre:'Leche Lala 1L',cantidad:12,costo:18,precio:25,vencimiento:'2025-06-20',minimo:8,foto:''},
-{id:5,nombre:'Huevos San Juan',cantidad:30,costo:35,precio:50,vencimiento:'2025-07-01',minimo:12,foto:''}
+{id:1,nombre:'Coca-Cola 600ml',cantidad:24,costo:12,precio:18,vencimiento:'2025-08-15'},
+{id:2,nombre:'Sabritas Original',cantidad:15,costo:8,precio:15,vencimiento:'2025-07-20'},
+{id:3,nombre:'Pan Bimbo Grande',cantidad:8,costo:25,precio:35,vencimiento:'2025-06-25'},
+{id:4,nombre:'Leche Lala 1L',cantidad:12,costo:18,precio:25,vencimiento:'2025-06-20'},
+{id:5,nombre:'Huevos San Juan',cantidad:30,costo:35,precio:50,vencimiento:'2025-07-01'}
 ];
+
+// Verificar medianoche y resetear ventas
+useEffect(()=>{
+const verificarMedianoche=()=>{
+const ahora=new Date();
+const horas=ahora.getHours();
+const minutos=ahora.getMinutes();
+
+horas===0&&minutos===0&&resetearDatosDelDia();
+};
+const intervalo=setInterval(verificarMedianoche,60000);
+return()=>clearInterval(intervalo);
+},[]);
 
 // Inicialización
 useEffect(()=>{
-cargarDatosDelDia();
-cargarConfiguracion();
+cargarDatos();
 },[]);
 
-// Guardar datos solo cuando cambien y estén listos
+// Guardar datos cuando cambien
 useEffect(()=>{
-if(datosListos){
-const timer=setTimeout(()=>{
-guardarDatos();
-},1000);
-return()=>clearTimeout(timer);
-}
-},[inventario,ventas,datosListos]);
-
-// Guardar antes de cerrar
-useEffect(()=>{
-const guardarAntesDesCerrar=(e)=>{
 if(datosListos){
 guardarDatos();
 }
-};
-window.addEventListener('beforeunload',guardarAntesDesCerrar);
-window.addEventListener('pagehide',guardarAntesDesCerrar);
-return()=>{
-window.removeEventListener('beforeunload',guardarAntesDesCerrar);
-window.removeEventListener('pagehide',guardarAntesDesCerrar);
-};
-},[datosListos]);
+},[inventario,ventas,resumenDia,datosListos]);
 
-// Actualizar resumen
+// Actualizar resumen cuando cambien las ventas
 useEffect(()=>{
 if(datosListos){
 actualizarResumen();
 }
-},[ventas,selectedDate,datosListos]);
+},[ventas,datosListos]);
 
-const cargarConfiguracion=()=>{
+const cargarDatos=()=>{
 try{
-const config=localStorage.getItem('miTiendita_config');
-if(config){
-const{premium}=JSON.parse(config);
-setIsPremium(premium||false);
-}
-}catch(e){
-console.log('Sin configuración previa');
-}
-};
-
-const cargarDatosDelDia=()=>{
-try{
-const fechaSeleccionada=selectedDate.toLocaleDateString('es-MX');
+const hoy=new Date().toLocaleDateString('es-MX');
 const datosGuardados=localStorage.getItem('miTiendita_datos');
-const historico=JSON.parse(localStorage.getItem('miTiendita_historico')||'{}');
 
-if(datosGuardados){
-const datos=JSON.parse(datosGuardados);
-setInventario(datos.inventario||productosIniciales);
-if(historico[fechaSeleccionada]){
-setVentas(historico[fechaSeleccionada].ventas||[]);
-}else if(datos.fecha===fechaSeleccionada){
-setVentas(datos.ventas||[]);
-}else{
-setVentas([]);
-}
+const inventarioGuardado=localStorage.getItem('miTiendita_inventario');
+
+// Cargar inventario (persistente)
+if(inventarioGuardado){
+const inv=JSON.parse(inventarioGuardado);
+// Limitar a 33 productos
+setInventario(inv.slice(0,33));
 }else{
 setInventario(productosIniciales);
-setVentas([]);
 }
+
+// Cargar ventas del día
+if(datosGuardados){
+const datos=JSON.parse(datosGuardados);
+if(datos.fecha===hoy){
+setVentas(datos.ventas||[]);
+setResumenDia(datos.resumen||{totalVentas:0,totalGanancias:0,productosVendidos:0});
+}else{
+// Nuevo día, resetear ventas
+setVentas([]);
+setResumenDia({totalVentas:0,totalGanancias:0,productosVendidos:0});
+}
+}
+
 setDatosListos(true);
 }catch(e){
-console.log('Inicializando datos nuevos');
+console.log('Inicializando datos');
 setInventario(productosIniciales);
 setVentas([]);
 setDatosListos(true);
@@ -139,35 +127,26 @@ const guardarDatos=()=>{
 if(!datosListos)return;
 try{
 const hoy=new Date().toLocaleDateString('es-MX');
-const fechaSeleccionada=selectedDate.toLocaleDateString('es-MX');
-const datos={
+
+// Guardar inventario (persistente)
+localStorage.setItem('miTiendita_inventario',JSON.stringify(inventario.slice(0,33)));
+
+// Guardar datos del día (ventas y resumen)
+const datosDelDia={
 fecha:hoy,
-inventario:inventario,
-ventas:hoy===fechaSeleccionada?ventas:[],
+ventas:ventas,
 resumen:resumenDia
 };
-localStorage.setItem('miTiendita_datos',JSON.stringify(datos));
-
-const historico=JSON.parse(localStorage.getItem('miTiendita_historico')||'{}');
-const diasLimite=isPremium?90:15;
-const fechasOrdenadas=Object.keys(historico).sort((a,b)=>new Date(b)-new Date(a));
-
-if(hoy===fechaSeleccionada&&ventas.length>0){
-historico[fechaSeleccionada]={
-ventas:ventas,
-resumen:resumenDia,
-fecha:fechaSeleccionada
-};
-}
-
-if(fechasOrdenadas.length>diasLimite){
-fechasOrdenadas.slice(diasLimite).forEach(fecha=>delete historico[fecha]);
-}
-
-localStorage.setItem('miTiendita_historico',JSON.stringify(historico));
+localStorage.setItem('miTiendita_datos',JSON.stringify(datosDelDia));
 }catch(e){
-console.log('No se pudo guardar, se reintentará');
+console.log('Error al guardar');
 }
+};
+
+const resetearDatosDelDia=()=>{
+setVentas([]);
+setResumenDia({totalVentas:0,totalGanancias:0,productosVendidos:0});
+guardarDatos();
 };
 
 const getDiasVencimiento=(fecha)=>{
@@ -183,41 +162,10 @@ return'text-green-600 bg-green-100';
 };
 
 const actualizarResumen=()=>{
-const ventasDelDia=ventas.filter(v=>{
-const fechaVenta=new Date(v.fecha||selectedDate).toLocaleDateString('es-MX');
-return fechaVenta===selectedDate.toLocaleDateString('es-MX');
-});
-const totalVentas=ventasDelDia.reduce((sum,v)=>sum+v.total,0);
-const totalGanancias=ventasDelDia.reduce((sum,v)=>sum+(v.total-(v.costo*v.cantidad)),0);
-const productosVendidos=ventasDelDia.reduce((sum,v)=>sum+v.cantidad,0);
+const totalVentas=ventas.reduce((sum,v)=>sum+v.total,0);
+const totalGanancias=ventas.reduce((sum,v)=>sum+(v.total-(v.costo*v.cantidad)),0);
+const productosVendidos=ventas.reduce((sum,v)=>sum+v.cantidad,0);
 setResumenDia({totalVentas,totalGanancias,productosVendidos});
-};
-
-const comprimirImagen=(file)=>{
-return new Promise((resolve)=>{
-const reader=new FileReader();
-reader.onload=(e)=>{
-const img=new Image();
-img.onload=()=>{
-const canvas=document.createElement('canvas');
-const ctx=canvas.getContext('2d');
-const maxSize=800;
-let width=img.width;
-let height=img.height;
-if(width>height){
-if(width>maxSize){height=(height*maxSize)/width;width=maxSize}
-}else{
-if(height>maxSize){width=(width*maxSize)/height;height=maxSize}
-}
-canvas.width=width;
-canvas.height=height;
-ctx.drawImage(img,0,0,width,height);
-resolve(canvas.toDataURL('image/jpeg',0.7));
-};
-img.src=e.target.result;
-};
-reader.readAsDataURL(file);
-});
 };
 
 const registrarVenta=()=>{
@@ -239,7 +187,6 @@ cantidad:ventaActual.cantidad,
 precio:producto.precio,
 costo:producto.costo,
 total:ventaActual.total,
-fecha:selectedDate.toISOString(),
 hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
 };
 setVentas([...ventas,nuevaVenta]);
@@ -248,29 +195,35 @@ setVentaActual({productoId:'',cantidad:1,total:0});
 alert('¡Venta registrada!');
 };
 
-const agregarProducto=async()=>{
+const agregarProducto=()=>{
 if(!nuevoProducto.nombre||!nuevoProducto.cantidad||!nuevoProducto.costo||
-!nuevoProducto.precio||!nuevoProducto.vencimiento||!nuevoProducto.minimo){
+!nuevoProducto.precio||!nuevoProducto.vencimiento){
 alert('Completa todos los campos');
 return;
 }
+
+// Verificar límite de 33 productos
+if(!productoEditando&&inventario.length>=33){
+alert('Límite de 33 productos alcanzado en versión de prueba');
+return;
+}
+
 const producto={
 id:productoEditando?productoEditando.id:Date.now(),
 nombre:nuevoProducto.nombre,
 cantidad:parseInt(nuevoProducto.cantidad),
 costo:parseFloat(nuevoProducto.costo),
 precio:parseFloat(nuevoProducto.precio),
-vencimiento:nuevoProducto.vencimiento,
-minimo:parseInt(nuevoProducto.minimo),
-foto:nuevoProducto.foto||''
+vencimiento:nuevoProducto.vencimiento
 };
+
 if(productoEditando){
 setInventario(inventario.map(p=>p.id===productoEditando.id?producto:p));
 setProductoEditando(null);
 }else{
 setInventario([...inventario,producto]);
 }
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
+setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
 setMostrarFormulario(false);
 alert(productoEditando?'¡Producto actualizado!':'¡Producto agregado!');
 };
@@ -282,11 +235,16 @@ nombre:producto.nombre,
 cantidad:producto.cantidad.toString(),
 costo:producto.costo.toString(),
 precio:producto.precio.toString(),
-vencimiento:producto.vencimiento,
-minimo:producto.minimo.toString(),
-foto:producto.foto||''
+vencimiento:producto.vencimiento
 });
 setMostrarFormulario(true);
+// Enfocar el primer campo después de un delay
+setTimeout(()=>{
+if(nombreRef.current){
+nombreRef.current.focus();
+nombreRef.current.setSelectionRange(0,producto.nombre.length);
+}
+},100);
 };
 
 const eliminarProducto=(id)=>{
@@ -306,151 +264,55 @@ updatedVenta.total=producto.precio*parseInt(updatedVenta.cantidad||0);
 setVentaActual(updatedVenta);
 };
 
-const handleImageUpload=async(e)=>{
-const file=e.target.files[0];
-if(file){
-if(file.size>5*1024*1024){
-alert('Imagen muy grande. Max 5MB');
-return;
-}
-try{
-const imagenComprimida=await comprimirImagen(file);
-setNuevoProducto({...nuevoProducto,foto:imagenComprimida});
-}catch(error){
-alert('Error al procesar imagen');
-}
-}
+// Prevenir que el teclado se cierre en iOS
+const handleInputChange=(setter,field)=>(e)=>{
+e.preventDefault();
+const value=e.target.value;
+setter(prev=>({...prev,[field]:value}));
 };
 
 const NavBar=()=>(
-<div className="bg-blue-600 text-white p-4 shadow-lg relative">
-<div className="flex items-center justify-between">
-<button onClick={()=>setCurrentView('main')} className="text-2xl font-bold">
-🏪 Mi Tiendita
-</button>
-<button onClick={()=>setShowCalendar(!showCalendar)} 
-className="text-lg px-3 py-1 bg-blue-700 rounded-lg hover:bg-blue-800">
-📅 {selectedDate.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}
-</button>
-</div>
-{showCalendar&&(
-<div className="absolute top-full right-4 mt-2 bg-white rounded-xl shadow-xl p-4 z-50">
-<CalendarioComponent/>
-</div>
-)}
-</div>
+<div className="bg-blue-600 text-white p-4 shadow-lg">
+<div className="text-center">
+<div className="text-lg">
+{new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>
 );
-
-const CalendarioComponent=()=>{
-const diasSemana=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-const mesActual=selectedDate.getMonth();
-const añoActual=selectedDate.getFullYear();
-const primerDia=new Date(añoActual,mesActual,1);
-const ultimoDia=new Date(añoActual,mesActual+1,0);
-const diasEnMes=ultimoDia.getDate();
-const empiezaEn=primerDia.getDay();
-const historico=JSON.parse(localStorage.getItem('miTiendita_historico')||'{}');
-
-const cambiarMes=(direccion)=>{
-const nuevaFecha=new Date(selectedDate);
-nuevaFecha.setMonth(nuevaFecha.getMonth()+direccion);
-setSelectedDate(nuevaFecha);
-};
-
-const seleccionarDia=(dia)=>{
-const nuevaFecha=new Date(añoActual,mesActual,dia);
-setSelectedDate(nuevaFecha);
-setShowCalendar(false);
-cargarDatosDelDia();
-};
-
-const tienVentas=(dia)=>{
-const fecha=new Date(añoActual,mesActual,dia).toLocaleDateString('es-MX');
-return historico[fecha]&&historico[fecha].ventas&&historico[fecha].ventas.length>0;
-};
-
-const getMontoVentas=(dia)=>{
-const fecha=new Date(añoActual,mesActual,dia).toLocaleDateString('es-MX');
-if(historico[fecha]&&historico[fecha].resumen){
-return historico[fecha].resumen.totalVentas;
 }
-return 0;
-};
 
-return(
-<div className="w-80">
-<div className="flex justify-between items-center mb-4">
-<button onClick={()=>cambiarMes(-1)} className="text-blue-600 p-2 hover:bg-blue-100 rounded">←</button>
-<h3 className="text-lg font-bold text-gray-800">
-{selectedDate.toLocaleDateString('es-MX',{month:'long',year:'numeric'})}
-</h3>
-<button onClick={()=>cambiarMes(1)} className="text-blue-600 p-2 hover:bg-blue-100 rounded">→</button>
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
 </div>
-<div className="calendar-grid mb-2">
-{diasSemana.map(dia=>(
-<div key={dia} className="text-center text-xs font-bold text-gray-600">{dia}</div>
-))}
 </div>
-<div className="calendar-grid">
-{[...Array(empiezaEn)].map((_,i)=>(<div key={`empty-${i}`}/>))}
-{[...Array(diasEnMes)].map((_,i)=>{
-const dia=i+1;
-const esHoy=new Date().toDateString()===new Date(añoActual,mesActual,dia).toDateString();
-const estaSeleccionado=selectedDate.getDate()===dia;
-const ventas=tienVentas(dia);
-const monto=getMontoVentas(dia);
-return(
-<div key={dia} onClick={()=>seleccionarDia(dia)}
-className={`calendar-day ${ventas?'has-sales':'bg-gray-100'} 
-${estaSeleccionado?'selected':''} ${esHoy?'ring-2 ring-blue-400':''}`}>
-<span className="font-bold">{dia}</span>
-{ventas&&(<span className="text-xs">${monto.toFixed(0)}</span>)}
 </div>
 );
-})}
-</div>
-{!isPremium&&(
-<div className="mt-4 p-3 bg-yellow-100 rounded-lg text-sm">
-<p className="text-yellow-800">
-<span className="premium-badge mr-2">PREMIUM</span>
-Actualiza para 3 meses de histórico
-</p>
-</div>
-)}
-</div>
-);
-};
 
 const MainView=()=>(
 <div className="p-6 space-y-6">
-<div className="bg-white rounded-2xl shadow-xl p-6">
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
 <h1 className="text-3xl font-bold text-center mb-2">¡Bienvenido Emprendedor!</h1>
 <p className="text-center text-gray-600">¿Qué quieres hacer hoy?</p>
 </div>
 <div className="grid grid-cols-2 gap-4">
 <button onClick={()=>setCurrentView('ventas')}
-className="bg-green-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-green-600">
+className="bg-green-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition">
 <span className="text-4xl">💰</span>
 <span className="text-xl font-bold">Registrar Venta</span>
 </button>
 <button onClick={()=>setCurrentView('inventario')}
-className="bg-blue-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-blue-600">
+className="bg-blue-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition">
 <span className="text-4xl">📦</span>
 <span className="text-xl font-bold">Ver Inventario</span>
 </button>
-<button onClick={()=>setCurrentView('compras')}
-className="bg-purple-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-purple-600">
-<span className="text-4xl">🛒</span>
-<span className="text-xl font-bold">Lista Compras</span>
-</button>
 <button onClick={()=>setCurrentView('dinero')}
-className="bg-yellow-500 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-2 hover:bg-yellow-600 relative">
+className="bg-yellow-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition col-span-2">
 <span className="text-4xl">💸</span>
 <span className="text-xl font-bold">Mi Dinero</span>
-{isPremium&&<span className="premium-badge absolute top-2 right-2">PRO</span>}
 </button>
 </div>
-<div className="bg-white rounded-2xl shadow-xl p-6">
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
 <h2 className="text-xl font-bold mb-4">📊 Resumen del Día</h2>
 <div className="space-y-2">
 <div className="flex justify-between">
@@ -473,12 +335,12 @@ className="bg-yellow-500 text-white p-6 rounded-2xl shadow-xl flex flex-col item
 const VentasView=()=>(
 <div className="p-6 space-y-6">
 <h1 className="text-2xl font-bold">💰 Registrar Venta</h1>
-<div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6 space-y-4">
 <div>
 <label className="block text-lg font-semibold mb-2">Producto:</label>
 <select value={ventaActual.productoId} 
 onChange={(e)=>handleVentaChange('productoId',e.target.value)}
-className="w-full p-4 text-lg border-2 rounded-xl">
+className="w-full p-4 text-lg border rounded-xl bg-white">
 <option value="">Selecciona un producto</option>
 {inventario.filter(p=>p.cantidad>0).map(producto=>(
 <option key={producto.id} value={producto.id}>
@@ -491,32 +353,34 @@ className="w-full p-4 text-lg border-2 rounded-xl">
 <label className="block text-lg font-semibold mb-2">Cantidad:</label>
 <div className="flex items-center space-x-4">
 <button onClick={()=>handleVentaChange('cantidad',Math.max(1,ventaActual.cantidad-1))}
-className="bg-red-500 text-white px-6 py-3 rounded-xl text-2xl hover:bg-red-600">-</button>
-<input type="number" value={ventaActual.cantidad}
+className="bg-red-500 text-white px-6 py-3 rounded-xl text-2xl active:scale-95">-</button>
+<input type="number" 
+value={ventaActual.cantidad}
 onChange={(e)=>handleVentaChange('cantidad',parseInt(e.target.value)||0)}
-className="w-20 p-3 text-xl text-center border-2 rounded-xl" min="1"/>
+className="w-20 p-3 text-xl text-center border rounded-xl" 
+min="1"
+inputMode="numeric"
+pattern="[0-9]*"/>
 <button onClick={()=>handleVentaChange('cantidad',ventaActual.cantidad+1)}
-className="bg-green-500 text-white px-6 py-3 rounded-xl text-2xl hover:bg-green-600">+</button>
+className="bg-green-500 text-white px-6 py-3 rounded-xl text-2xl active:scale-95">+</button>
 </div>
 </div>
 <div className="bg-green-100 p-4 rounded-xl">
 <p className="text-2xl font-bold text-center">Total: ${ventaActual.total.toFixed(2)}</p>
 </div>
 <button onClick={registrarVenta}
-className="w-full bg-green-500 text-white p-4 rounded-xl text-xl font-bold hover:bg-green-600">
+className="w-full bg-green-500 text-white p-4 rounded-xl text-xl font-bold active:scale-95">
 ✅ Registrar Venta
 </button>
 </div>
-<div className="bg-white rounded-2xl shadow-xl p-6">
-<h2 className="text-xl font-bold mb-4">
-📋 Ventas del {selectedDate.toLocaleDateString('es-MX',{day:'numeric',month:'long'})}
-</h2>
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+<h2 className="text-xl font-bold mb-4">📋 Ventas de Hoy</h2>
 {ventas.length===0?(
 <p className="text-gray-500 text-center">No hay ventas registradas</p>
 ):(
 <div className="space-y-2">
 {ventas.map(venta=>(
-<div key={venta.id} className="bg-gray-50 p-3 rounded-xl">
+<div key={venta.id} className="bg-white p-3 rounded-xl shadow">
 <div className="flex justify-between">
 <span className="font-semibold">{venta.productoNombre}</span>
 <span>${venta.total.toFixed(2)}</span>
@@ -538,30 +402,31 @@ const InventarioView=()=>(
 <h1 className="text-2xl font-bold">📦 Mi Inventario</h1>
 <button onClick={()=>{
 setProductoEditando(null);
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
+setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
 setMostrarFormulario(true);
-}} className="bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 hover:bg-blue-600">
+setTimeout(()=>{
+if(nombreRef.current){
+nombreRef.current.focus();
+}
+},100);
+}} className="bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 active:scale-95">
 <span>➕</span>
 <span>Nuevo</span>
 </button>
 </div>
+<div className="text-sm text-gray-600 mb-2">
+Productos: {inventario.length}/33
+</div>
 {inventario.length===0?(
-<div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6 text-center">
 <p className="text-gray-500">No hay productos</p>
 </div>
 ):(
 inventario.map(producto=>{
 const diasVencimiento=getDiasVencimiento(producto.vencimiento);
 const colorVencimiento=getColorVencimiento(diasVencimiento);
-const stockBajo=producto.cantidad<=producto.minimo;
 return(
-<div key={producto.id} className="bg-white rounded-2xl shadow-xl p-6">
-<div className="flex items-start space-x-4">
-{producto.foto&&(
-<img src={producto.foto} alt={producto.nombre} 
-className="w-20 h-20 object-cover rounded-lg"/>
-)}
-<div className="flex-1">
+<div key={producto.id} className="bg-gray-50 rounded-2xl shadow-lg p-6">
 <div className="flex justify-between items-start mb-2">
 <h3 className="text-lg font-bold">{producto.nombre}</h3>
 <div className="flex items-center space-x-2">
@@ -569,17 +434,15 @@ className="w-20 h-20 object-cover rounded-lg"/>
 {diasVencimiento} días
 </span>
 <button onClick={()=>editarProducto(producto)} 
-className="text-blue-600 hover:text-blue-800">✏️</button>
+className="text-blue-600 active:scale-95">✏️</button>
 <button onClick={()=>eliminarProducto(producto.id)} 
-className="text-red-600 hover:text-red-800">🗑️</button>
+className="text-red-600 active:scale-95">🗑️</button>
 </div>
 </div>
 <div className="grid grid-cols-2 gap-2 text-sm">
 <div>
 <span className="text-gray-600">Stock:</span>
-<span className={`font-bold ml-2 ${stockBajo?'text-red-600':''}`}>
-{producto.cantidad} unidades
-</span>
+<span className="font-bold ml-2">{producto.cantidad} unidades</span>
 </div>
 <div>
 <span className="text-gray-600">Precio:</span>
@@ -590,15 +453,8 @@ className="text-red-600 hover:text-red-800">🗑️</button>
 <span className="ml-2">${producto.costo}</span>
 </div>
 <div>
-<span className="text-gray-600">Mínimo:</span>
-<span className="ml-2">{producto.minimo}</span>
-</div>
-</div>
-{stockBajo&&(
-<div className="mt-3 bg-red-100 text-red-700 p-2 rounded-lg text-sm">
-⚠️ Stock bajo - Necesitas comprar más
-</div>
-)}
+<span className="text-gray-600">Vence:</span>
+<span className="ml-2">{new Date(producto.vencimiento).toLocaleDateString('es-MX')}</span>
 </div>
 </div>
 </div>
@@ -607,54 +463,73 @@ className="text-red-600 hover:text-red-800">🗑️</button>
 )}
 {mostrarFormulario&&(
 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-<div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4 max-h-[90vh] overflow-y-auto">
+<div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
 <h2 className="text-xl font-bold">
 {productoEditando?'Editar Producto':'Agregar Nuevo Producto'}
 </h2>
-<input type="text" placeholder="Nombre del producto" value={nuevoProducto.nombre}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,nombre:e.target.value})}
-className="w-full p-3 border-2 rounded-xl"/>
-<div className="grid grid-cols-2 gap-4">
-<input type="number" placeholder="Cantidad" value={nuevoProducto.cantidad}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,cantidad:e.target.value})}
-className="p-3 border-2 rounded-xl"/>
+<div>
+<input ref={nombreRef}
+type="text" 
+placeholder="Nombre del producto" 
+value={nuevoProducto.nombre}
+onChange={handleInputChange(setNuevoProducto,'nombre')}
+onBlur={(e)=>e.target.focus()}
+className="w-full p-3 border rounded-xl"
+autoComplete="off"/>
 </div>
 <div className="grid grid-cols-2 gap-4">
-<input type="number" placeholder="Costo $" value={nuevoProducto.costo}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,costo:e.target.value})}
-className="p-3 border-2 rounded-xl"/>
-<input type="number" placeholder="Precio $" value={nuevoProducto.precio}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,precio:e.target.value})}
-className="p-3 border-2 rounded-xl"/>
+<div>
+<input ref={cantidadRef}
+type="number" 
+placeholder="Cantidad" 
+value={nuevoProducto.cantidad}
+onChange={handleInputChange(setNuevoProducto,'cantidad')}
+onBlur={(e)=>e.target.focus()}
+className="w-full p-3 border rounded-xl"
+inputMode="numeric"
+pattern="[0-9]*"/>
 </div>
-<input type="date" value={nuevoProducto.vencimiento}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,vencimiento:e.target.value})}
-className="w-full p-3 border-2 rounded-xl"/>
-<div className="space-y-2">
-<label className="block text-sm font-semibold">Foto (opcional):</label>
-<input type="file" accept="image/*" onChange={handleImageUpload}
-className="w-full p-2 border-2 rounded-xl text-sm"/>
-{nuevoProducto.foto&&(
-<div className="relative inline-block">
-<img src={nuevoProducto.foto} alt="Vista previa" 
-className="w-32 h-32 object-cover rounded-lg"/>
-<button onClick={()=>setNuevoProducto({...nuevoProducto,foto:''})}
-className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs">
-✕
-</button>
+<div>
+<input ref={costoRef}
+type="number" 
+placeholder="Costo $" 
+value={nuevoProducto.costo}
+onChange={handleInputChange(setNuevoProducto,'costo')}
+onBlur={(e)=>e.target.focus()}
+className="w-full p-3 border rounded-xl"
+inputMode="decimal"
+pattern="[0-9]*"/>
 </div>
-)}
+</div>
+<div className="grid grid-cols-2 gap-4">
+<div>
+<input ref={precioRef}
+type="number" 
+placeholder="Precio $" 
+value={nuevoProducto.precio}
+onChange={handleInputChange(setNuevoProducto,'precio')}
+onBlur={(e)=>e.target.focus()}
+className="w-full p-3 border rounded-xl"
+inputMode="decimal"
+pattern="[0-9]*"/>
+</div>
+<div>
+<input type="date" 
+value={nuevoProducto.vencimiento}
+onChange={handleInputChange(setNuevoProducto,'vencimiento')}
+className="w-full p-3 border rounded-xl"/>
+</div>
 </div>
 <div className="flex space-x-4">
 <button onClick={agregarProducto}
-className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold hover:bg-green-600">
+className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold active:scale-95">
 ✅ {productoEditando?'Actualizar':'Agregar'}
 </button>
 <button onClick={()=>{
 setMostrarFormulario(false);
 setProductoEditando(null);
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
-}} className="flex-1 bg-gray-500 text-white p-3 rounded-xl font-bold hover:bg-gray-600">
+setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
+}} className="flex-1 bg-gray-500 text-white p-3 rounded-xl font-bold active:scale-95">
 ❌ Cancelar
 </button>
 </div>
@@ -664,82 +539,9 @@ setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo
 </div>
 );
 
-const ComprasView=()=>{
-const productosComprar=inventario.filter(p=>{
-const stockBajo=p.cantidad<=p.minimo;
-const diasVencimiento=getDiasVencimiento(p.vencimiento);
-const proximoVencer=diasVencimiento<=15;
-return stockBajo||proximoVencer;
-});
-return(
-<div className="p-6 space-y-6">
-<div className="flex justify-between items-center">
-<h1 className="text-2xl font-bold">🛒 Lista de Compras</h1>
-<button onClick={()=>{
-setProductoEditando(null);
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:'',minimo:'',foto:''});
-setMostrarFormulario(true);
-}} className="bg-purple-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 hover:bg-purple-600">
-<span>➕</span>
-<span>Nuevo</span>
-</button>
-</div>
-{productosComprar.length===0?(
-<div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-<p className="text-2xl mb-4">🎉</p>
-<p className="text-lg font-semibold">¡Todo está bien surtido!</p>
-<p className="text-gray-600">No necesitas comprar nada por ahora</p>
-</div>
-):(
-<>
-<div className="bg-yellow-100 rounded-2xl p-4">
-<p className="text-lg">📝 Tienes <span className="font-bold">{productosComprar.length} productos</span> que necesitas comprar</p>
-</div>
-{productosComprar.map(producto=>{
-const diasVencimiento=getDiasVencimiento(producto.vencimiento);
-const stockBajo=producto.cantidad<=producto.minimo;
-const cantidadComprar=Math.max(producto.minimo*2-producto.cantidad,10);
-return(
-<div key={producto.id} className="bg-white rounded-2xl shadow-xl p-6">
-<div className="flex items-start space-x-4">
-{producto.foto&&(
-<img src={producto.foto} alt={producto.nombre} 
-className="w-16 h-16 object-cover rounded-lg"/>
-)}
-<div className="flex-1">
-<h3 className="text-lg font-bold mb-2">{producto.nombre}</h3>
-<div className="space-y-2">
-{stockBajo&&(
-<div className="bg-red-100 text-red-700 p-3 rounded-lg">
-⚠️ Stock bajo: Solo te quedan {producto.cantidad} unidades
-</div>
-)}
-{diasVencimiento<=15&&(
-<div className="bg-yellow-100 text-yellow-700 p-3 rounded-lg">
-⏰ Vence en {diasVencimiento} días
-</div>
-)}
-<div className="bg-blue-100 text-blue-700 p-3 rounded-lg">
-💡 Compra al menos {cantidadComprar} unidades
-</div>
-</div>
-</div>
-</div>
-</div>
-);
-})}
-<div className="bg-green-100 rounded-2xl p-6">
-<h3 className="text-lg font-bold mb-3">💡 Consejo de Doña Carmen:</h3>
-<p className="italic">"Mija, acuérdate de comparar precios en el mercado y con los mayoristas. A veces te conviene comprar de a poquito si no tienes mucho dinero, pero si puedes, compra más cantidad para que te salga más barato."</p>
-</div>
-</>
-)}
-</div>
-);
-};
-
 const DineroView=()=>{
 const [calculadora,setCalculadora]=useState({costo:'',precio:'',cantidad:'',margen:0,ganancia:0});
+
 const calcularMargen=()=>{
 const costoNum=parseFloat(calculadora.costo)||0;
 const precioNum=parseFloat(calculadora.precio)||0;
@@ -751,39 +553,27 @@ const gananciaTotal=gananciaPorUnidad*cantidadNum;
 setCalculadora({...calculadora,margen:margenPorcentaje,ganancia:gananciaTotal});
 }
 };
+
 useEffect(()=>{calcularMargen()},[calculadora.costo,calculadora.precio,calculadora.cantidad]);
+
 const getColorMargen=(margen)=>{
 if(margen<20)return'text-red-600';
 if(margen<35)return'text-yellow-600';
 return'text-green-600';
 };
+
 const getMensajeMargen=(margen)=>{
-if(margen<20)return'⚠️ Margen muy bajo, casi no ganas';
+if(margen<20)return'⚠️ Margen muy bajo';
 if(margen<35)return'👍 Margen aceptable';
-if(margen<50)return'😊 Buen margen de ganancia';
+if(margen<50)return'😊 Buen margen';
 return'🎉 ¡Excelente margen!';
 };
-const getAnalisisPremium=()=>{
-if(!isPremium)return null;
-const historico=JSON.parse(localStorage.getItem('miTiendita_historico')||'{}');
-const ultimosDias=Object.entries(historico).slice(-7);
-const promedioSemanal=ultimosDias.reduce((sum,[_,data])=>sum+(data.resumen?.totalVentas||0),0)/(ultimosDias.length||1);
-const mejorDia=ultimosDias.reduce((mejor,[fecha,data])=>{
-if(!mejor||(data.resumen?.totalVentas||0)>mejor.venta){
-return{fecha,venta:data.resumen?.totalVentas||0};
-}
-return mejor;
-},null);
-return{promedioSemanal,mejorDia};
-};
-const analisis=getAnalisisPremium();
+
 return(
 <div className="p-6 space-y-6">
 <h1 className="text-2xl font-bold">💸 Mi Dinero</h1>
-<div className="bg-white rounded-2xl shadow-xl p-6">
-<h2 className="text-xl font-bold mb-4">
-📊 Resumen del {selectedDate.toLocaleDateString('es-MX',{day:'numeric',month:'long'})}
-</h2>
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+<h2 className="text-xl font-bold mb-4">📊 Resumen del Día</h2>
 <div className="grid grid-cols-2 gap-4">
 <div className="bg-green-100 p-4 rounded-xl text-center">
 <p className="text-3xl font-bold text-green-600">${resumenDia.totalVentas.toFixed(2)}</p>
@@ -794,7 +584,7 @@ return(
 <p className="text-sm">Ganancias</p>
 </div>
 </div>
-<div className="mt-4 bg-gray-50 p-4 rounded-xl">
+<div className="mt-4 bg-white p-4 rounded-xl">
 <div className="flex justify-between items-center">
 <span>Productos vendidos:</span>
 <span className="font-bold text-xl">{resumenDia.productosVendidos}</span>
@@ -805,52 +595,39 @@ return(
 </div>
 </div>
 </div>
-{isPremium&&analisis&&(
-<div className="bg-gradient-to-r from-yellow-100 to-amber-100 rounded-2xl shadow-xl p-6">
-<div className="flex items-center justify-between mb-4">
-<h2 className="text-xl font-bold">📈 Análisis Premium</h2>
-<span className="premium-badge">PRO</span>
-</div>
-<div className="space-y-3">
-<div className="bg-white bg-opacity-50 p-3 rounded-lg">
-<p className="text-sm text-gray-600">Promedio semanal:</p>
-<p className="text-2xl font-bold">${analisis.promedioSemanal.toFixed(2)}</p>
-</div>
-{analisis.mejorDia&&(
-<div className="bg-white bg-opacity-50 p-3 rounded-lg">
-<p className="text-sm text-gray-600">Mejor día de la semana:</p>
-<p className="font-bold">
-{new Date(analisis.mejorDia.fecha).toLocaleDateString('es-MX',{weekday:'long'})}
-</p>
-<p className="text-lg">${analisis.mejorDia.venta.toFixed(2)}</p>
-</div>
-)}
-</div>
-</div>
-)}
-<div className="bg-white rounded-2xl shadow-xl p-6">
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
 <h2 className="text-xl font-bold mb-4">🧮 Calculadora de Ganancias</h2>
 <div className="space-y-4">
 <div>
 <label className="block text-sm font-semibold mb-1">Costo del producto:</label>
-<input type="number" placeholder="$0.00" value={calculadora.costo}
+<input type="number" 
+placeholder="$0.00" 
+value={calculadora.costo}
 onChange={(e)=>setCalculadora({...calculadora,costo:e.target.value})}
-className="w-full p-3 border-2 rounded-xl"/>
+className="w-full p-3 border rounded-xl"
+inputMode="decimal"/>
 </div>
 <div>
 <label className="block text-sm font-semibold mb-1">Precio de venta:</label>
-<input type="number" placeholder="$0.00" value={calculadora.precio}
+<input type="number" 
+placeholder="$0.00" 
+value={calculadora.precio}
 onChange={(e)=>setCalculadora({...calculadora,precio:e.target.value})}
-className="w-full p-3 border-2 rounded-xl"/>
+className="w-full p-3 border rounded-xl"
+inputMode="decimal"/>
 </div>
 <div>
 <label className="block text-sm font-semibold mb-1">Cantidad a vender:</label>
-<input type="number" placeholder="1" value={calculadora.cantidad}
+<input type="number" 
+placeholder="1" 
+value={calculadora.cantidad}
 onChange={(e)=>setCalculadora({...calculadora,cantidad:e.target.value})}
-className="w-full p-3 border-2 rounded-xl"/>
+className="w-full p-3 border rounded-xl"
+inputMode="numeric"
+pattern="[0-9]*"/>
 </div>
 {calculadora.costo&&calculadora.precio&&(
-<div className="bg-gray-50 p-4 rounded-xl space-y-3">
+<div className="bg-white p-4 rounded-xl space-y-3">
 <div className="text-center">
 <p className={`text-3xl font-bold ${getColorMargen(calculadora.margen)}`}>
 {calculadora.margen.toFixed(1)}%
@@ -869,7 +646,7 @@ ${calculadora.ganancia.toFixed(2)}
 )}
 </div>
 </div>
-<div className="bg-white rounded-2xl shadow-xl p-6">
+<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
 <h2 className="text-xl font-bold mb-4">📈 Proyecciones</h2>
 <div className="space-y-3">
 <div className="bg-blue-50 p-4 rounded-xl">
@@ -888,43 +665,6 @@ ${Math.max(resumenDia.totalVentas*1.1,500).toFixed(2)}
 </div>
 </div>
 </div>
-<div className="bg-yellow-100 rounded-2xl p-6">
-<h3 className="text-lg font-bold mb-3">💡 Consejo de Doña Carmen:</h3>
-<p className="italic">
-{resumenDia.totalVentas<300
-?'"Ándale mija, todavía es temprano. Ponle ganas que el día no se acaba. Acuérdate que los clientes de la tarde también compran."'
-:resumenDia.totalVentas<800
-?'"Vas bien mija, pero no te confíes. Aprovecha para ofrecer algo más a cada cliente, aunque sea un dulcito."'
-:'"¡Órale! Qué buen día llevas. Así se hace negocio. No olvides apartar tu ganancia del día."'
-}
-</p>
-</div>
-{!isPremium&&(
-<div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl shadow-xl p-6">
-<h3 className="text-lg font-bold mb-3">🌟 Actualiza a Premium</h3>
-<ul className="space-y-2 mb-4">
-<li className="flex items-center">
-<span className="text-green-600 mr-2">✓</span>
-<span>Análisis detallado de ventas</span>
-</li>
-<li className="flex items-center">
-<span className="text-green-600 mr-2">✓</span>
-<span>3 meses de histórico completo</span>
-</li>
-<li className="flex items-center">
-<span className="text-green-600 mr-2">✓</span>
-<span>Sistema de fiados (próximamente)</span>
-</li>
-<li className="flex items-center">
-<span className="text-green-600 mr-2">✓</span>
-<span>Respaldo en la nube</span>
-</li>
-</ul>
-<button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-xl font-bold">
-Actualizar por $49 MXN/mes
-</button>
-</div>
-)}
 </div>
 );
 };
@@ -933,33 +673,20 @@ const renderView=()=>{
 switch(currentView){
 case'ventas':return<VentasView/>;
 case'inventario':return<InventarioView/>;
-case'compras':return<ComprasView/>;
 case'dinero':return<DineroView/>;
 default:return<MainView/>;
 }
 };
 
 return(
-<div className="min-h-screen bg-gray-100">
+<div className="min-h-screen bg-white">
 <NavBar/>
 <div className="pb-20">{renderView()}</div>
 {currentView!=='main'&&(
 <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
 <button onClick={()=>setCurrentView('main')}
-className="w-full bg-blue-500 text-white p-4 rounded-xl text-lg font-bold hover:bg-blue-600">
+className="w-full bg-blue-500 text-white p-4 rounded-xl text-lg font-bold active:scale-95">
 🏠 Volver al Inicio
 </button>
 </div>
 )}
-</div>
-);
-}
-
-const root=ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
-</script>
-</body>
-</html>"/>
-<input type="number" placeholder="Stock mínimo" value={nuevoProducto.minimo}
-onChange={(e)=>setNuevoProducto({...nuevoProducto,minimo:e.target.value})}
-className="p-3 border-2 rounded-xl
