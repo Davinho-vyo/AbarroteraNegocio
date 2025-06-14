@@ -1,692 +1,841 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Mi Tiendita</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-body{font-family:Arial,sans-serif;background:#ffffff;margin:0}
-#root{min-height:100vh}
-input,select,textarea{
-font-size:16px!important;
--webkit-appearance:none;
--moz-appearance:none;
-appearance:none;
-}
-input:focus,select:focus,textarea:focus{
-outline:2px solid #3b82f6;
-outline-offset:2px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Tiendita</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            margin: 0;
+        }
+        #root {
+            min-height: 100vh;
+        }
+        input, select, textarea {
+            font-size: 16px !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+    </style>
 </head>
 <body>
-<div id="root">Cargando...</div>
-<script type="text/babel">
-const {useState,useEffect,useRef}=React;
+    <div id="root">Cargando...</div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-function App(){
-const [currentView,setCurrentView]=useState('main');
-const [ventas,setVentas]=useState([]);
-const [inventario,setInventario]=useState([]);
-const [ventaActual,setVentaActual]=useState({productoId:'',cantidad:1,total:0});
-const [nuevoProducto,setNuevoProducto]=useState({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
-const [productoEditando,setProductoEditando]=useState(null);
-const [mostrarFormulario,setMostrarFormulario]=useState(false);
-const [resumenDia,setResumenDia]=useState({totalVentas:0,totalGanancias:0,productosVendidos:0});
-const [datosListos,setDatosListos]=useState(false);
+        function App() {
+            const [currentView, setCurrentView] = useState('main');
+            const [ventas, setVentas] = useState([]);
+            const [inventario, setInventario] = useState([]);
+            const [ventaActual, setVentaActual] = useState({
+                productoId: '',
+                cantidad: 1,
+                total: 0
+            });
+            const [nuevoProducto, setNuevoProducto] = useState({
+                nombre: '',
+                cantidad: '',
+                costo: '',
+                precio: '',
+                vencimiento: ''
+            });
+            const [productoEditando, setProductoEditando] = useState(null);
+            const [mostrarFormulario, setMostrarFormulario] = useState(false);
+            const [resumenDia, setResumenDia] = useState({
+                totalVentas: 0,
+                totalGanancias: 0,
+                productosVendidos: 0
+            });
+            const [datosListos, setDatosListos] = useState(false);
 
-// Referencias para mantener focus en iOS
-const nombreRef=useRef(null);
-const cantidadRef=useRef(null);
-const costoRef=useRef(null);
-const precioRef=useRef(null);
+            // Referencias para mantener focus en iOS
+            const nombreRef = useRef(null);
+            const cantidadRef = useRef(null);
+            const costoRef = useRef(null);
+            const precioRef = useRef(null);
 
-const productosIniciales=[
-{id:1,nombre:'Coca-Cola 600ml',cantidad:24,costo:12,precio:18,vencimiento:'2025-08-15'},
-{id:2,nombre:'Sabritas Original',cantidad:15,costo:8,precio:15,vencimiento:'2025-07-20'},
-{id:3,nombre:'Pan Bimbo Grande',cantidad:8,costo:25,precio:35,vencimiento:'2025-06-25'},
-{id:4,nombre:'Leche Lala 1L',cantidad:12,costo:18,precio:25,vencimiento:'2025-06-20'},
-{id:5,nombre:'Huevos San Juan',cantidad:30,costo:35,precio:50,vencimiento:'2025-07-01'}
-];
+            const productosIniciales = [
+                { id: 1, nombre: 'Coca-Cola 600ml', cantidad: 24, costo: 12, precio: 18, vencimiento: '2025-08-15' },
+                { id: 2, nombre: 'Sabritas Original', cantidad: 15, costo: 8, precio: 15, vencimiento: '2025-07-20' },
+                { id: 3, nombre: 'Pan Bimbo Grande', cantidad: 8, costo: 25, precio: 35, vencimiento: '2025-06-25' },
+                { id: 4, nombre: 'Leche Lala 1L', cantidad: 12, costo: 18, precio: 25, vencimiento: '2025-06-20' },
+                { id: 5, nombre: 'Huevos San Juan', cantidad: 30, costo: 35, precio: 50, vencimiento: '2025-07-01' }
+            ];
 
-// Verificar medianoche y resetear ventas
-useEffect(()=>{
-const verificarMedianoche=()=>{
-const ahora=new Date();
-const horas=ahora.getHours();
-const minutos=ahora.getMinutes();
+            // Verificar medianoche y resetear ventas
+            useEffect(() => {
+                const verificarMedianoche = () => {
+                    const ahora = new Date();
+                    const horas = ahora.getHours();
+                    const minutos = ahora.getMinutes();
+                    
+                    if (horas === 0 && minutos === 0) {
+                        resetearDatosDelDia();
+                    }
+                };
+                
+                const intervalo = setInterval(verificarMedianoche, 60000); // Cada minuto
+                return () => clearInterval(intervalo);
+            }, []);
 
-horas===0&&minutos===0&&resetearDatosDelDia();
-};
-const intervalo=setInterval(verificarMedianoche,60000);
-return()=>clearInterval(intervalo);
-},[]);
+            // Inicialización
+            useEffect(() => {
+                cargarDatos();
+            }, []);
 
-// Inicialización
-useEffect(()=>{
-cargarDatos();
-},[]);
+            // Guardar datos cuando cambien
+            useEffect(() => {
+                if (datosListos) {
+                    guardarDatos();
+                }
+            }, [inventario, ventas, resumenDia, datosListos]);
 
-// Guardar datos cuando cambien
-useEffect(()=>{
-if(datosListos){
-guardarDatos();
-}
-},[inventario,ventas,resumenDia,datosListos]);
+            // Actualizar resumen cuando cambien las ventas
+            useEffect(() => {
+                if (datosListos) {
+                    actualizarResumen();
+                }
+            }, [ventas, datosListos]);
 
-// Actualizar resumen cuando cambien las ventas
-useEffect(()=>{
-if(datosListos){
-actualizarResumen();
-}
-},[ventas,datosListos]);
+            const cargarDatos = () => {
+                try {
+                    const hoy = new Date().toLocaleDateString('es-MX');
+                    const datosGuardados = localStorage.getItem('miTiendita_datos');
+                    const inventarioGuardado = localStorage.getItem('miTiendita_inventario');
 
-const cargarDatos=()=>{
-try{
-const hoy=new Date().toLocaleDateString('es-MX');
-const datosGuardados=localStorage.getItem('miTiendita_datos');
+                    // Cargar inventario (persistente)
+                    if (inventarioGuardado) {
+                        const inv = JSON.parse(inventarioGuardado);
+                        // Limitar a 33 productos
+                        setInventario(inv.slice(0, 33));
+                    } else {
+                        setInventario(productosIniciales);
+                    }
 
-const inventarioGuardado=localStorage.getItem('miTiendita_inventario');
+                    // Cargar ventas del día
+                    if (datosGuardados) {
+                        const datos = JSON.parse(datosGuardados);
+                        if (datos.fecha === hoy) {
+                            setVentas(datos.ventas || []);
+                            setResumenDia(datos.resumen || {
+                                totalVentas: 0,
+                                totalGanancias: 0,
+                                productosVendidos: 0
+                            });
+                        } else {
+                            // Nuevo día, resetear ventas
+                            setVentas([]);
+                            setResumenDia({
+                                totalVentas: 0,
+                                totalGanancias: 0,
+                                productosVendidos: 0
+                            });
+                        }
+                    }
 
-// Cargar inventario (persistente)
-if(inventarioGuardado){
-const inv=JSON.parse(inventarioGuardado);
-// Limitar a 33 productos
-setInventario(inv.slice(0,33));
-}else{
-setInventario(productosIniciales);
-}
+                    setDatosListos(true);
+                } catch (e) {
+                    console.log('Inicializando datos');
+                    setInventario(productosIniciales);
+                    setVentas([]);
+                    setDatosListos(true);
+                }
+            };
 
-// Cargar ventas del día
-if(datosGuardados){
-const datos=JSON.parse(datosGuardados);
-if(datos.fecha===hoy){
-setVentas(datos.ventas||[]);
-setResumenDia(datos.resumen||{totalVentas:0,totalGanancias:0,productosVendidos:0});
-}else{
-// Nuevo día, resetear ventas
-setVentas([]);
-setResumenDia({totalVentas:0,totalGanancias:0,productosVendidos:0});
-}
-}
+            const guardarDatos = () => {
+                if (!datosListos) return;
+                
+                try {
+                    const hoy = new Date().toLocaleDateString('es-MX');
 
-setDatosListos(true);
-}catch(e){
-console.log('Inicializando datos');
-setInventario(productosIniciales);
-setVentas([]);
-setDatosListos(true);
-}
-};
+                    // Guardar inventario (persistente)
+                    localStorage.setItem('miTiendita_inventario', JSON.stringify(inventario.slice(0, 33)));
 
-const guardarDatos=()=>{
-if(!datosListos)return;
-try{
-const hoy=new Date().toLocaleDateString('es-MX');
+                    // Guardar datos del día (ventas y resumen)
+                    const datosDelDia = {
+                        fecha: hoy,
+                        ventas: ventas,
+                        resumen: resumenDia
+                    };
+                    localStorage.setItem('miTiendita_datos', JSON.stringify(datosDelDia));
+                } catch (e) {
+                    console.log('Error al guardar');
+                }
+            };
 
-// Guardar inventario (persistente)
-localStorage.setItem('miTiendita_inventario',JSON.stringify(inventario.slice(0,33)));
+            const resetearDatosDelDia = () => {
+                setVentas([]);
+                setResumenDia({
+                    totalVentas: 0,
+                    totalGanancias: 0,
+                    productosVendidos: 0
+                });
+                guardarDatos();
+            };
 
-// Guardar datos del día (ventas y resumen)
-const datosDelDia={
-fecha:hoy,
-ventas:ventas,
-resumen:resumenDia
-};
-localStorage.setItem('miTiendita_datos',JSON.stringify(datosDelDia));
-}catch(e){
-console.log('Error al guardar');
-}
-};
+            const getDiasVencimiento = (fecha) => {
+                const hoy = new Date();
+                const vencimiento = new Date(fecha);
+                return Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+            };
 
-const resetearDatosDelDia=()=>{
-setVentas([]);
-setResumenDia({totalVentas:0,totalGanancias:0,productosVendidos:0});
-guardarDatos();
-};
+            const getColorVencimiento = (dias) => {
+                if (dias <= 5) return 'text-red-600 bg-red-100';
+                if (dias <= 15) return 'text-yellow-600 bg-yellow-100';
+                return 'text-green-600 bg-green-100';
+            };
 
-const getDiasVencimiento=(fecha)=>{
-const hoy=new Date();
-const vencimiento=new Date(fecha);
-return Math.ceil((vencimiento-hoy)/(1000*60*60*24));
-};
+            const actualizarResumen = () => {
+                const totalVentas = ventas.reduce((sum, v) => sum + v.total, 0);
+                const totalGanancias = ventas.reduce((sum, v) => sum + (v.total - (v.costo * v.cantidad)), 0);
+                const productosVendidos = ventas.reduce((sum, v) => sum + v.cantidad, 0);
+                setResumenDia({ totalVentas, totalGanancias, productosVendidos });
+            };
 
-const getColorVencimiento=(dias)=>{
-if(dias<=5)return'text-red-600 bg-red-100';
-if(dias<=15)return'text-yellow-600 bg-yellow-100';
-return'text-green-600 bg-green-100';
-};
+            const registrarVenta = () => {
+                if (!ventaActual.productoId || ventaActual.cantidad < 1) {
+                    alert('Selecciona producto y cantidad');
+                    return;
+                }
+                
+                const producto = inventario.find(p => p.id === parseInt(ventaActual.productoId));
+                if (!producto) return;
+                
+                if (producto.cantidad < ventaActual.cantidad) {
+                    alert(`Solo tienes ${producto.cantidad} unidades`);
+                    return;
+                }
+                
+                const nuevaVenta = {
+                    id: Date.now(),
+                    productoId: producto.id,
+                    productoNombre: producto.nombre,
+                    cantidad: ventaActual.cantidad,
+                    precio: producto.precio,
+                    costo: producto.costo,
+                    total: ventaActual.total,
+                    hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+                };
+                
+                setVentas([...ventas, nuevaVenta]);
+                setInventario(inventario.map(p => 
+                    p.id === producto.id 
+                        ? { ...p, cantidad: p.cantidad - ventaActual.cantidad }
+                        : p
+                ));
+                setVentaActual({ productoId: '', cantidad: 1, total: 0 });
+                alert('¡Venta registrada!');
+            };
 
-const actualizarResumen=()=>{
-const totalVentas=ventas.reduce((sum,v)=>sum+v.total,0);
-const totalGanancias=ventas.reduce((sum,v)=>sum+(v.total-(v.costo*v.cantidad)),0);
-const productosVendidos=ventas.reduce((sum,v)=>sum+v.cantidad,0);
-setResumenDia({totalVentas,totalGanancias,productosVendidos});
-};
+            const agregarProducto = () => {
+                if (!nuevoProducto.nombre || !nuevoProducto.cantidad || !nuevoProducto.costo || 
+                    !nuevoProducto.precio || !nuevoProducto.vencimiento) {
+                    alert('Completa todos los campos');
+                    return;
+                }
 
-const registrarVenta=()=>{
-if(!ventaActual.productoId||ventaActual.cantidad<1){
-alert('Selecciona producto y cantidad');
-return;
-}
-const producto=inventario.find(p=>p.id===parseInt(ventaActual.productoId));
-if(!producto)return;
-if(producto.cantidad<ventaActual.cantidad){
-alert(`Solo tienes ${producto.cantidad} unidades`);
-return;
-}
-const nuevaVenta={
-id:Date.now(),
-productoId:producto.id,
-productoNombre:producto.nombre,
-cantidad:ventaActual.cantidad,
-precio:producto.precio,
-costo:producto.costo,
-total:ventaActual.total,
-hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
-};
-setVentas([...ventas,nuevaVenta]);
-setInventario(inventario.map(p=>p.id===producto.id?{...p,cantidad:p.cantidad-ventaActual.cantidad}:p));
-setVentaActual({productoId:'',cantidad:1,total:0});
-alert('¡Venta registrada!');
-};
+                // Verificar límite de 33 productos
+                if (!productoEditando && inventario.length >= 33) {
+                    alert('Límite de 33 productos alcanzado en versión de prueba');
+                    return;
+                }
 
-const agregarProducto=()=>{
-if(!nuevoProducto.nombre||!nuevoProducto.cantidad||!nuevoProducto.costo||
-!nuevoProducto.precio||!nuevoProducto.vencimiento){
-alert('Completa todos los campos');
-return;
-}
+                const producto = {
+                    id: productoEditando ? productoEditando.id : Date.now(),
+                    nombre: nuevoProducto.nombre,
+                    cantidad: parseInt(nuevoProducto.cantidad),
+                    costo: parseFloat(nuevoProducto.costo),
+                    precio: parseFloat(nuevoProducto.precio),
+                    vencimiento: nuevoProducto.vencimiento
+                };
 
-// Verificar límite de 33 productos
-if(!productoEditando&&inventario.length>=33){
-alert('Límite de 33 productos alcanzado en versión de prueba');
-return;
-}
+                if (productoEditando) {
+                    setInventario(inventario.map(p => p.id === productoEditando.id ? producto : p));
+                    setProductoEditando(null);
+                } else {
+                    setInventario([...inventario, producto]);
+                }
+                
+                setNuevoProducto({ nombre: '', cantidad: '', costo: '', precio: '', vencimiento: '' });
+                setMostrarFormulario(false);
+                alert(productoEditando ? '¡Producto actualizado!' : '¡Producto agregado!');
+            };
 
-const producto={
-id:productoEditando?productoEditando.id:Date.now(),
-nombre:nuevoProducto.nombre,
-cantidad:parseInt(nuevoProducto.cantidad),
-costo:parseFloat(nuevoProducto.costo),
-precio:parseFloat(nuevoProducto.precio),
-vencimiento:nuevoProducto.vencimiento
-};
+            const editarProducto = (producto) => {
+                setProductoEditando(producto);
+                setNuevoProducto({
+                    nombre: producto.nombre,
+                    cantidad: producto.cantidad.toString(),
+                    costo: producto.costo.toString(),
+                    precio: producto.precio.toString(),
+                    vencimiento: producto.vencimiento
+                });
+                setMostrarFormulario(true);
+                // Enfocar el primer campo después de un delay
+                setTimeout(() => {
+                    if (nombreRef.current) {
+                        nombreRef.current.focus();
+                        nombreRef.current.setSelectionRange(0, producto.nombre.length);
+                    }
+                }, 100);
+            };
 
-if(productoEditando){
-setInventario(inventario.map(p=>p.id===productoEditando.id?producto:p));
-setProductoEditando(null);
-}else{
-setInventario([...inventario,producto]);
-}
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
-setMostrarFormulario(false);
-alert(productoEditando?'¡Producto actualizado!':'¡Producto agregado!');
-};
+            const eliminarProducto = (id) => {
+                if (confirm('¿Eliminar producto?')) {
+                    setInventario(inventario.filter(p => p.id !== id));
+                }
+            };
 
-const editarProducto=(producto)=>{
-setProductoEditando(producto);
-setNuevoProducto({
-nombre:producto.nombre,
-cantidad:producto.cantidad.toString(),
-costo:producto.costo.toString(),
-precio:producto.precio.toString(),
-vencimiento:producto.vencimiento
-});
-setMostrarFormulario(true);
-// Enfocar el primer campo después de un delay
-setTimeout(()=>{
-if(nombreRef.current){
-nombreRef.current.focus();
-nombreRef.current.setSelectionRange(0,producto.nombre.length);
-}
-},100);
-};
+            const handleVentaChange = (field, value) => {
+                const updatedVenta = { ...ventaActual, [field]: value };
+                
+                if (field === 'productoId' || field === 'cantidad') {
+                    const producto = inventario.find(p => p.id === parseInt(updatedVenta.productoId));
+                    if (producto) {
+                        updatedVenta.total = producto.precio * parseInt(updatedVenta.cantidad || 0);
+                    }
+                }
+                
+                setVentaActual(updatedVenta);
+            };
 
-const eliminarProducto=(id)=>{
-if(confirm('¿Eliminar producto?')){
-setInventario(inventario.filter(p=>p.id!==id));
-}
-};
+            // Prevenir que el teclado se cierre en iOS
+            const handleInputChange = (setter, field) => (e) => {
+                e.preventDefault();
+                const value = e.target.value;
+                setter(prev => ({ ...prev, [field]: value }));
+            };
 
-const handleVentaChange=(field,value)=>{
-const updatedVenta={...ventaActual,[field]:value};
-if(field==='productoId'||field==='cantidad'){
-const producto=inventario.find(p=>p.id===parseInt(updatedVenta.productoId));
-if(producto){
-updatedVenta.total=producto.precio*parseInt(updatedVenta.cantidad||0);
-}
-}
-setVentaActual(updatedVenta);
-};
+            const NavBar = () => (
+                <div className="bg-blue-600 text-white p-4 shadow-lg">
+                    <div className="text-center">
+                        <div className="text-lg">
+                            {new Date().toLocaleDateString('es-MX', { 
+                                weekday: 'long', 
+                                day: 'numeric', 
+                                month: 'long' 
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
 
-// Prevenir que el teclado se cierre en iOS
-const handleInputChange=(setter,field)=>(e)=>{
-e.preventDefault();
-const value=e.target.value;
-setter(prev=>({...prev,[field]:value}));
-};
+            const MainView = () => (
+                <div className="p-6 space-y-6">
+                    <div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                        <h1 className="text-3xl font-bold text-center mb-2">¡Bienvenido Emprendedor!</h1>
+                        <p className="text-center text-gray-600">¿Qué quieres hacer hoy?</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <button 
+                            onClick={() => setCurrentView('ventas')}
+                            className="bg-green-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition"
+                        >
+                            <span className="text-4xl">💰</span>
+                            <span className="text-xl font-bold">Registrar Venta</span>
+                        </button>
+                        
+                        <button 
+                            onClick={() => setCurrentView('inventario')}
+                            className="bg-blue-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition"
+                        >
+                            <span className="text-4xl">📦</span>
+                            <span className="text-xl font-bold">Ver Inventario</span>
+                        </button>
+                        
+                        <button 
+                            onClick={() => setCurrentView('dinero')}
+                            className="bg-yellow-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition col-span-2"
+                        >
+                            <span className="text-4xl">💸</span>
+                            <span className="text-xl font-bold">Mi Dinero</span>
+                        </button>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                        <h2 className="text-xl font-bold mb-4">📊 Resumen del Día</h2>
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <span>Ventas totales:</span>
+                                <span className="font-bold">${resumenDia.totalVentas.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Ganancias:</span>
+                                <span className="font-bold text-green-600">${resumenDia.totalGanancias.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Productos vendidos:</span>
+                                <span className="font-bold">{resumenDia.productosVendidos}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
 
-const NavBar=()=>(
-<div className="bg-blue-600 text-white p-4 shadow-lg">
-<div className="text-center">
-<div className="text-lg">
-{new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})}</div>
-);
-}
+            const VentasView = () => (
+                <div className="p-6 space-y-6">
+                    <h1 className="text-2xl font-bold">💰 Registrar Venta</h1>
+                    
+                    <div className="bg-gray-50 rounded-2xl shadow-lg p-6 space-y-4">
+                        <div>
+                            <label className="block text-lg font-semibold mb-2">Producto:</label>
+                            <select 
+                                value={ventaActual.productoId} 
+                                onChange={(e) => handleVentaChange('productoId', e.target.value)}
+                                className="w-full p-4 text-lg border rounded-xl bg-white"
+                            >
+                                <option value="">Selecciona un producto</option>
+                                {inventario.filter(p => p.cantidad > 0).map(producto => (
+                                    <option key={producto.id} value={producto.id}>
+                                        {producto.nombre} - ${producto.precio} (Stock: {producto.cantidad})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-lg font-semibold mb-2">Cantidad:</label>
+                            <div className="flex items-center space-x-4">
+                                <button 
+                                    onClick={() => handleVentaChange('cantidad', Math.max(1, ventaActual.cantidad - 1))}
+                                    className="bg-red-500 text-white px-6 py-3 rounded-xl text-2xl active:scale-95"
+                                >
+                                    -
+                                </button>
+                                <input 
+                                    type="number" 
+                                    value={ventaActual.cantidad}
+                                    onChange={(e) => handleVentaChange('cantidad', parseInt(e.target.value) || 0)}
+                                    className="w-20 p-3 text-xl text-center border rounded-xl" 
+                                    min="1"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                />
+                                <button 
+                                    onClick={() => handleVentaChange('cantidad', ventaActual.cantidad + 1)}
+                                    className="bg-green-500 text-white px-6 py-3 rounded-xl text-2xl active:scale-95"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-green-100 p-4 rounded-xl">
+                            <p className="text-2xl font-bold text-center">Total: ${ventaActual.total.toFixed(2)}</p>
+                        </div>
+                        
+                        <button 
+                            onClick={registrarVenta}
+                            className="w-full bg-green-500 text-white p-4 rounded-xl text-xl font-bold active:scale-95"
+                        >
+                            ✅ Registrar Venta
+                        </button>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                        <h2 className="text-xl font-bold mb-4">📋 Ventas de Hoy</h2>
+                        {ventas.length === 0 ? (
+                            <p className="text-gray-500 text-center">No hay ventas registradas</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {ventas.map(venta => (
+                                    <div key={venta.id} className="bg-white p-3 rounded-xl shadow">
+                                        <div className="flex justify-between">
+                                            <span className="font-semibold">{venta.productoNombre}</span>
+                                            <span>${venta.total.toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            {venta.cantidad} unidades • {venta.hora}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
 
-const root=ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App/>);
-</script>
+            const InventarioView = () => (
+                <div className="p-6 space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-2xl font-bold">📦 Mi Inventario</h1>
+                        <button 
+                            onClick={() => {
+                                setProductoEditando(null);
+                                setNuevoProducto({ nombre: '', cantidad: '', costo: '', precio: '', vencimiento: '' });
+                                setMostrarFormulario(true);
+                                setTimeout(() => {
+                                    if (nombreRef.current) {
+                                        nombreRef.current.focus();
+                                    }
+                                }, 100);
+                            }} 
+                            className="bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 active:scale-95"
+                        >
+                            <span>➕</span>
+                            <span>Nuevo</span>
+                        </button>
+                    </div>
+                    
+                    <div className="text-sm text-gray-600 mb-2">
+                        Productos: {inventario.length}/33
+                    </div>
+                    
+                    {inventario.length === 0 ? (
+                        <div className="bg-gray-50 rounded-2xl shadow-lg p-6 text-center">
+                            <p className="text-gray-500">No hay productos</p>
+                        </div>
+                    ) : (
+                        inventario.map(producto => {
+                            const diasVencimiento = getDiasVencimiento(producto.vencimiento);
+                            const colorVencimiento = getColorVencimiento(diasVencimiento);
+                            
+                            return (
+                                <div key={producto.id} className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-lg font-bold">{producto.nombre}</h3>
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-3 py-1 rounded-full text-sm ${colorVencimiento}`}>
+                                                {diasVencimiento} días
+                                            </span>
+                                            <button 
+                                                onClick={() => editarProducto(producto)} 
+                                                className="text-blue-600 active:scale-95"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button 
+                                                onClick={() => eliminarProducto(producto.id)} 
+                                                className="text-red-600 active:scale-95"
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div>
+                                            <span className="text-gray-600">Stock:</span>
+                                            <span className="font-bold ml-2">{producto.cantidad} unidades</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-600">Precio:</span>
+                                            <span className="font-bold ml-2">${producto.precio}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-600">Costo:</span>
+                                            <span className="ml-2">${producto.costo}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-600">Vence:</span>
+                                            <span className="ml-2">
+                                                {new Date(producto.vencimiento).toLocaleDateString('es-MX')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                    
+                    {mostrarFormulario && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
+                                <h2 className="text-xl font-bold">
+                                    {productoEditando ? 'Editar Producto' : 'Agregar Nuevo Producto'}
+                                </h2>
+                                
+                                <div>
+                                    <input 
+                                        ref={nombreRef}
+                                        type="text" 
+                                        placeholder="Nombre del producto" 
+                                        value={nuevoProducto.nombre}
+                                        onChange={handleInputChange(setNuevoProducto, 'nombre')}
+                                        onBlur={(e) => e.target.focus()}
+                                        className="w-full p-3 border rounded-xl"
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <input 
+                                            ref={cantidadRef}
+                                            type="number" 
+                                            placeholder="Cantidad" 
+                                            value={nuevoProducto.cantidad}
+                                            onChange={handleInputChange(setNuevoProducto, 'cantidad')}
+                                            onBlur={(e) => e.target.focus()}
+                                            className="w-full p-3 border rounded-xl"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                        />
+                                    </div>
+                                    <div>
+                                        <input 
+                                            ref={costoRef}
+                                            type="number" 
+                                            placeholder="Costo $" 
+                                            value={nuevoProducto.costo}
+                                            onChange={handleInputChange(setNuevoProducto, 'costo')}
+                                            onBlur={(e) => e.target.focus()}
+                                            className="w-full p-3 border rounded-xl"
+                                            inputMode="decimal"
+                                            pattern="[0-9]*"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <input 
+                                            ref={precioRef}
+                                            type="number" 
+                                            placeholder="Precio $" 
+                                            value={nuevoProducto.precio}
+                                            onChange={handleInputChange(setNuevoProducto, 'precio')}
+                                            onBlur={(e) => e.target.focus()}
+                                            className="w-full p-3 border rounded-xl"
+                                            inputMode="decimal"
+                                            pattern="[0-9]*"
+                                        />
+                                    </div>
+                                    <div>
+                                        <input 
+                                            type="date" 
+                                            value={nuevoProducto.vencimiento}
+                                            onChange={handleInputChange(setNuevoProducto, 'vencimiento')}
+                                            className="w-full p-3 border rounded-xl"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="flex space-x-4">
+                                    <button 
+                                        onClick={agregarProducto}
+                                        className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold active:scale-95"
+                                    >
+                                        ✅ {productoEditando ? 'Actualizar' : 'Agregar'}
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            setMostrarFormulario(false);
+                                            setProductoEditando(null);
+                                            setNuevoProducto({ nombre: '', cantidad: '', costo: '', precio: '', vencimiento: '' });
+                                        }} 
+                                        className="flex-1 bg-gray-500 text-white p-3 rounded-xl font-bold active:scale-95"
+                                    >
+                                        ❌ Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const DineroView = () => {
+                const [calculadora, setCalculadora] = useState({
+                    costo: '',
+                    precio: '',
+                    cantidad: '',
+                    margen: 0,
+                    ganancia: 0
+                });
+
+                const calcularMargen = () => {
+                    const costoNum = parseFloat(calculadora.costo) || 0;
+                    const precioNum = parseFloat(calculadora.precio) || 0;
+                    const cantidadNum = parseInt(calculadora.cantidad) || 1;
+                    
+                    if (costoNum > 0 && precioNum > 0) {
+                        const margenPorcentaje = ((precioNum - costoNum) / costoNum) * 100;
+                        const gananciaPorUnidad = precioNum - costoNum;
+                        const gananciaTotal = gananciaPorUnidad * cantidadNum;
+                        setCalculadora({
+                            ...calculadora,
+                            margen: margenPorcentaje,
+                            ganancia: gananciaTotal
+                        });
+                    }
+                };
+
+                useEffect(() => {
+                    calcularMargen();
+                }, [calculadora.costo, calculadora.precio, calculadora.cantidad]);
+
+                const getColorMargen = (margen) => {
+                    if (margen < 20) return 'text-red-600';
+                    if (margen < 35) return 'text-yellow-600';
+                    return 'text-green-600';
+                };
+
+                const getMensajeMargen = (margen) => {
+                    if (margen < 20) return '⚠️ Margen muy bajo';
+                    if (margen < 35) return '👍 Margen aceptable';
+                    if (margen < 50) return '😊 Buen margen';
+                    return '🎉 ¡Excelente margen!';
+                };
+
+                return (
+                    <div className="p-6 space-y-6">
+                        <h1 className="text-2xl font-bold">💸 Mi Dinero</h1>
+                        
+                        <div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                            <h2 className="text-xl font-bold mb-4">📊 Resumen del Día</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-green-100 p-4 rounded-xl text-center">
+                                    <p className="text-3xl font-bold text-green-600">${resumenDia.totalVentas.toFixed(2)}</p>
+                                    <p className="text-sm">Ventas Totales</p>
+                                </div>
+                                <div className="bg-blue-100 p-4 rounded-xl text-center">
+                                    <p className="text-3xl font-bold text-blue-600">${resumenDia.totalGanancias.toFixed(2)}</p>
+                                    <p className="text-sm">Ganancias</p>
+                                </div>
+                            </div>
+                            <div className="mt-4 bg-white p-4 rounded-xl">
+                                <div className="flex justify-between items-center">
+                                    <span>Productos vendidos:</span>
+                                    <span className="font-bold text-xl">{resumenDia.productosVendidos}</span>
+                                </div>
+                                <div className="flex justify-between items-center mt-2">
+                                    <span>Transacciones:</span>
+                                    <span className="font-bold text-xl">{ventas.length}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                            <h2 className="text-xl font-bold mb-4">🧮 Calculadora de Ganancias</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1">Costo del producto:</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="$0.00" 
+                                        value={calculadora.costo}
+                                        onChange={(e) => setCalculadora({...calculadora, costo: e.target.value})}
+                                        className="w-full p-3 border rounded-xl"
+                                        inputMode="decimal"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1">Precio de venta:</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="$0.00" 
+                                        value={calculadora.precio}
+                                        onChange={(e) => setCalculadora({...calculadora, precio: e.target.value})}
+                                        className="w-full p-3 border rounded-xl"
+                                        inputMode="decimal"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1">Cantidad a vender:</label>
+                                    <input 
+                                        type="number" 
+                                        placeholder="1" 
+                                        value={calculadora.cantidad}
+                                        onChange={(e) => setCalculadora({...calculadora, cantidad: e.target.value})}
+                                        className="w-full p-3 border rounded-xl"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                    />
+                                </div>
+                                {calculadora.costo && calculadora.precio && (
+                                    <div className="bg-white p-4 rounded-xl space-y-3">
+                                        <div className="text-center">
+                                            <p className={`text-3xl font-bold ${getColorMargen(calculadora.margen)}`}>
+                                                {calculadora.margen.toFixed(1)}%
+                                            </p>
+                                            <p className="text-sm">{getMensajeMargen(calculadora.margen)}</p>
+                                        </div>
+                                        <div className="border-t pt-3">
+                                            <p className="text-center">
+                                                <span className="text-gray-600">Ganancia total: </span>
+                                                <span className="text-2xl font-bold text-green-600">
+                                                    ${calculadora.ganancia.toFixed(2)}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-2xl shadow-lg p-6">
+                            <h2 className="text-xl font-bold mb-4">📈 Proyecciones</h2>
+                            <div className="space-y-3">
+                                <div className="bg-blue-50 p-4 rounded-xl">
+                                    <p className="font-semibold">Si mantienes este ritmo...</p>
+                                    <p className="text-2xl font-bold text-blue-600">
+                                        ${(resumenDia.totalVentas * 30).toFixed(2)}
+                                    </p>
+                                    <p className="text-sm text-gray-600">ganarás este mes</p>
+                                </div>
+                                <div className="bg-green-50 p-4 rounded-xl">
+                                    <p className="font-semibold">Meta diaria recomendada:</p>
+                                    <p className="text-2xl font-bold text-green-600">
+                                        ${Math.max(resumenDia.totalVentas * 1.1, 500).toFixed(2)}
+                                    </p>
+                                    <p className="text-sm text-gray-600">10% más que hoy</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderView = () => {
+                switch (currentView) {
+                    case 'ventas':
+                        return <VentasView />;
+                    case 'inventario':
+                        return <InventarioView />;
+                    case 'dinero':
+                        return <DineroView />;
+                    default:
+                        return <MainView />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-white">
+                    <NavBar />
+                    <div className="pb-20">
+                        {renderView()}
+                    </div>
+                    {currentView !== 'main' && (
+                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+                            <button 
+                                onClick={() => setCurrentView('main')}
+                                className="w-full bg-blue-500 text-white p-4 rounded-xl text-lg font-bold active:scale-95"
+                            >
+                                🏠 Volver al Inicio
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Renderizar la aplicación
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
-</div>
-</div>
-</div>
-);
-
-const MainView=()=>(
-<div className="p-6 space-y-6">
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<h1 className="text-3xl font-bold text-center mb-2">¡Bienvenido Emprendedor!</h1>
-<p className="text-center text-gray-600">¿Qué quieres hacer hoy?</p>
-</div>
-<div className="grid grid-cols-2 gap-4">
-<button onClick={()=>setCurrentView('ventas')}
-className="bg-green-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition">
-<span className="text-4xl">💰</span>
-<span className="text-xl font-bold">Registrar Venta</span>
-</button>
-<button onClick={()=>setCurrentView('inventario')}
-className="bg-blue-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition">
-<span className="text-4xl">📦</span>
-<span className="text-xl font-bold">Ver Inventario</span>
-</button>
-<button onClick={()=>setCurrentView('dinero')}
-className="bg-yellow-500 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center space-y-2 active:scale-95 transition col-span-2">
-<span className="text-4xl">💸</span>
-<span className="text-xl font-bold">Mi Dinero</span>
-</button>
-</div>
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<h2 className="text-xl font-bold mb-4">📊 Resumen del Día</h2>
-<div className="space-y-2">
-<div className="flex justify-between">
-<span>Ventas totales:</span>
-<span className="font-bold">${resumenDia.totalVentas.toFixed(2)}</span>
-</div>
-<div className="flex justify-between">
-<span>Ganancias:</span>
-<span className="font-bold text-green-600">${resumenDia.totalGanancias.toFixed(2)}</span>
-</div>
-<div className="flex justify-between">
-<span>Productos vendidos:</span>
-<span className="font-bold">{resumenDia.productosVendidos}</span>
-</div>
-</div>
-</div>
-</div>
-);
-
-const VentasView=()=>(
-<div className="p-6 space-y-6">
-<h1 className="text-2xl font-bold">💰 Registrar Venta</h1>
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6 space-y-4">
-<div>
-<label className="block text-lg font-semibold mb-2">Producto:</label>
-<select value={ventaActual.productoId} 
-onChange={(e)=>handleVentaChange('productoId',e.target.value)}
-className="w-full p-4 text-lg border rounded-xl bg-white">
-<option value="">Selecciona un producto</option>
-{inventario.filter(p=>p.cantidad>0).map(producto=>(
-<option key={producto.id} value={producto.id}>
-{producto.nombre} - ${producto.precio} (Stock: {producto.cantidad})
-</option>
-))}
-</select>
-</div>
-<div>
-<label className="block text-lg font-semibold mb-2">Cantidad:</label>
-<div className="flex items-center space-x-4">
-<button onClick={()=>handleVentaChange('cantidad',Math.max(1,ventaActual.cantidad-1))}
-className="bg-red-500 text-white px-6 py-3 rounded-xl text-2xl active:scale-95">-</button>
-<input type="number" 
-value={ventaActual.cantidad}
-onChange={(e)=>handleVentaChange('cantidad',parseInt(e.target.value)||0)}
-className="w-20 p-3 text-xl text-center border rounded-xl" 
-min="1"
-inputMode="numeric"
-pattern="[0-9]*"/>
-<button onClick={()=>handleVentaChange('cantidad',ventaActual.cantidad+1)}
-className="bg-green-500 text-white px-6 py-3 rounded-xl text-2xl active:scale-95">+</button>
-</div>
-</div>
-<div className="bg-green-100 p-4 rounded-xl">
-<p className="text-2xl font-bold text-center">Total: ${ventaActual.total.toFixed(2)}</p>
-</div>
-<button onClick={registrarVenta}
-className="w-full bg-green-500 text-white p-4 rounded-xl text-xl font-bold active:scale-95">
-✅ Registrar Venta
-</button>
-</div>
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<h2 className="text-xl font-bold mb-4">📋 Ventas de Hoy</h2>
-{ventas.length===0?(
-<p className="text-gray-500 text-center">No hay ventas registradas</p>
-):(
-<div className="space-y-2">
-{ventas.map(venta=>(
-<div key={venta.id} className="bg-white p-3 rounded-xl shadow">
-<div className="flex justify-between">
-<span className="font-semibold">{venta.productoNombre}</span>
-<span>${venta.total.toFixed(2)}</span>
-</div>
-<div className="text-sm text-gray-600">
-{venta.cantidad} unidades • {venta.hora}
-</div>
-</div>
-))}
-</div>
-)}
-</div>
-</div>
-);
-
-const InventarioView=()=>(
-<div className="p-6 space-y-6">
-<div className="flex justify-between items-center">
-<h1 className="text-2xl font-bold">📦 Mi Inventario</h1>
-<button onClick={()=>{
-setProductoEditando(null);
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
-setMostrarFormulario(true);
-setTimeout(()=>{
-if(nombreRef.current){
-nombreRef.current.focus();
-}
-},100);
-}} className="bg-blue-500 text-white px-4 py-2 rounded-xl flex items-center space-x-2 active:scale-95">
-<span>➕</span>
-<span>Nuevo</span>
-</button>
-</div>
-<div className="text-sm text-gray-600 mb-2">
-Productos: {inventario.length}/33
-</div>
-{inventario.length===0?(
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6 text-center">
-<p className="text-gray-500">No hay productos</p>
-</div>
-):(
-inventario.map(producto=>{
-const diasVencimiento=getDiasVencimiento(producto.vencimiento);
-const colorVencimiento=getColorVencimiento(diasVencimiento);
-return(
-<div key={producto.id} className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<div className="flex justify-between items-start mb-2">
-<h3 className="text-lg font-bold">{producto.nombre}</h3>
-<div className="flex items-center space-x-2">
-<span className={`px-3 py-1 rounded-full text-sm ${colorVencimiento}`}>
-{diasVencimiento} días
-</span>
-<button onClick={()=>editarProducto(producto)} 
-className="text-blue-600 active:scale-95">✏️</button>
-<button onClick={()=>eliminarProducto(producto.id)} 
-className="text-red-600 active:scale-95">🗑️</button>
-</div>
-</div>
-<div className="grid grid-cols-2 gap-2 text-sm">
-<div>
-<span className="text-gray-600">Stock:</span>
-<span className="font-bold ml-2">{producto.cantidad} unidades</span>
-</div>
-<div>
-<span className="text-gray-600">Precio:</span>
-<span className="font-bold ml-2">${producto.precio}</span>
-</div>
-<div>
-<span className="text-gray-600">Costo:</span>
-<span className="ml-2">${producto.costo}</span>
-</div>
-<div>
-<span className="text-gray-600">Vence:</span>
-<span className="ml-2">{new Date(producto.vencimiento).toLocaleDateString('es-MX')}</span>
-</div>
-</div>
-</div>
-);
-})
-)}
-{mostrarFormulario&&(
-<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-<div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
-<h2 className="text-xl font-bold">
-{productoEditando?'Editar Producto':'Agregar Nuevo Producto'}
-</h2>
-<div>
-<input ref={nombreRef}
-type="text" 
-placeholder="Nombre del producto" 
-value={nuevoProducto.nombre}
-onChange={handleInputChange(setNuevoProducto,'nombre')}
-onBlur={(e)=>e.target.focus()}
-className="w-full p-3 border rounded-xl"
-autoComplete="off"/>
-</div>
-<div className="grid grid-cols-2 gap-4">
-<div>
-<input ref={cantidadRef}
-type="number" 
-placeholder="Cantidad" 
-value={nuevoProducto.cantidad}
-onChange={handleInputChange(setNuevoProducto,'cantidad')}
-onBlur={(e)=>e.target.focus()}
-className="w-full p-3 border rounded-xl"
-inputMode="numeric"
-pattern="[0-9]*"/>
-</div>
-<div>
-<input ref={costoRef}
-type="number" 
-placeholder="Costo $" 
-value={nuevoProducto.costo}
-onChange={handleInputChange(setNuevoProducto,'costo')}
-onBlur={(e)=>e.target.focus()}
-className="w-full p-3 border rounded-xl"
-inputMode="decimal"
-pattern="[0-9]*"/>
-</div>
-</div>
-<div className="grid grid-cols-2 gap-4">
-<div>
-<input ref={precioRef}
-type="number" 
-placeholder="Precio $" 
-value={nuevoProducto.precio}
-onChange={handleInputChange(setNuevoProducto,'precio')}
-onBlur={(e)=>e.target.focus()}
-className="w-full p-3 border rounded-xl"
-inputMode="decimal"
-pattern="[0-9]*"/>
-</div>
-<div>
-<input type="date" 
-value={nuevoProducto.vencimiento}
-onChange={handleInputChange(setNuevoProducto,'vencimiento')}
-className="w-full p-3 border rounded-xl"/>
-</div>
-</div>
-<div className="flex space-x-4">
-<button onClick={agregarProducto}
-className="flex-1 bg-green-500 text-white p-3 rounded-xl font-bold active:scale-95">
-✅ {productoEditando?'Actualizar':'Agregar'}
-</button>
-<button onClick={()=>{
-setMostrarFormulario(false);
-setProductoEditando(null);
-setNuevoProducto({nombre:'',cantidad:'',costo:'',precio:'',vencimiento:''});
-}} className="flex-1 bg-gray-500 text-white p-3 rounded-xl font-bold active:scale-95">
-❌ Cancelar
-</button>
-</div>
-</div>
-</div>
-)}
-</div>
-);
-
-const DineroView=()=>{
-const [calculadora,setCalculadora]=useState({costo:'',precio:'',cantidad:'',margen:0,ganancia:0});
-
-const calcularMargen=()=>{
-const costoNum=parseFloat(calculadora.costo)||0;
-const precioNum=parseFloat(calculadora.precio)||0;
-const cantidadNum=parseInt(calculadora.cantidad)||1;
-if(costoNum>0&&precioNum>0){
-const margenPorcentaje=((precioNum-costoNum)/costoNum)*100;
-const gananciaPorUnidad=precioNum-costoNum;
-const gananciaTotal=gananciaPorUnidad*cantidadNum;
-setCalculadora({...calculadora,margen:margenPorcentaje,ganancia:gananciaTotal});
-}
-};
-
-useEffect(()=>{calcularMargen()},[calculadora.costo,calculadora.precio,calculadora.cantidad]);
-
-const getColorMargen=(margen)=>{
-if(margen<20)return'text-red-600';
-if(margen<35)return'text-yellow-600';
-return'text-green-600';
-};
-
-const getMensajeMargen=(margen)=>{
-if(margen<20)return'⚠️ Margen muy bajo';
-if(margen<35)return'👍 Margen aceptable';
-if(margen<50)return'😊 Buen margen';
-return'🎉 ¡Excelente margen!';
-};
-
-return(
-<div className="p-6 space-y-6">
-<h1 className="text-2xl font-bold">💸 Mi Dinero</h1>
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<h2 className="text-xl font-bold mb-4">📊 Resumen del Día</h2>
-<div className="grid grid-cols-2 gap-4">
-<div className="bg-green-100 p-4 rounded-xl text-center">
-<p className="text-3xl font-bold text-green-600">${resumenDia.totalVentas.toFixed(2)}</p>
-<p className="text-sm">Ventas Totales</p>
-</div>
-<div className="bg-blue-100 p-4 rounded-xl text-center">
-<p className="text-3xl font-bold text-blue-600">${resumenDia.totalGanancias.toFixed(2)}</p>
-<p className="text-sm">Ganancias</p>
-</div>
-</div>
-<div className="mt-4 bg-white p-4 rounded-xl">
-<div className="flex justify-between items-center">
-<span>Productos vendidos:</span>
-<span className="font-bold text-xl">{resumenDia.productosVendidos}</span>
-</div>
-<div className="flex justify-between items-center mt-2">
-<span>Transacciones:</span>
-<span className="font-bold text-xl">{ventas.length}</span>
-</div>
-</div>
-</div>
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<h2 className="text-xl font-bold mb-4">🧮 Calculadora de Ganancias</h2>
-<div className="space-y-4">
-<div>
-<label className="block text-sm font-semibold mb-1">Costo del producto:</label>
-<input type="number" 
-placeholder="$0.00" 
-value={calculadora.costo}
-onChange={(e)=>setCalculadora({...calculadora,costo:e.target.value})}
-className="w-full p-3 border rounded-xl"
-inputMode="decimal"/>
-</div>
-<div>
-<label className="block text-sm font-semibold mb-1">Precio de venta:</label>
-<input type="number" 
-placeholder="$0.00" 
-value={calculadora.precio}
-onChange={(e)=>setCalculadora({...calculadora,precio:e.target.value})}
-className="w-full p-3 border rounded-xl"
-inputMode="decimal"/>
-</div>
-<div>
-<label className="block text-sm font-semibold mb-1">Cantidad a vender:</label>
-<input type="number" 
-placeholder="1" 
-value={calculadora.cantidad}
-onChange={(e)=>setCalculadora({...calculadora,cantidad:e.target.value})}
-className="w-full p-3 border rounded-xl"
-inputMode="numeric"
-pattern="[0-9]*"/>
-</div>
-{calculadora.costo&&calculadora.precio&&(
-<div className="bg-white p-4 rounded-xl space-y-3">
-<div className="text-center">
-<p className={`text-3xl font-bold ${getColorMargen(calculadora.margen)}`}>
-{calculadora.margen.toFixed(1)}%
-</p>
-<p className="text-sm">{getMensajeMargen(calculadora.margen)}</p>
-</div>
-<div className="border-t pt-3">
-<p className="text-center">
-<span className="text-gray-600">Ganancia total: </span>
-<span className="text-2xl font-bold text-green-600">
-${calculadora.ganancia.toFixed(2)}
-</span>
-</p>
-</div>
-</div>
-)}
-</div>
-</div>
-<div className="bg-gray-50 rounded-2xl shadow-lg p-6">
-<h2 className="text-xl font-bold mb-4">📈 Proyecciones</h2>
-<div className="space-y-3">
-<div className="bg-blue-50 p-4 rounded-xl">
-<p className="font-semibold">Si mantienes este ritmo...</p>
-<p className="text-2xl font-bold text-blue-600">
-${(resumenDia.totalVentas*30).toFixed(2)}
-</p>
-<p className="text-sm text-gray-600">ganarás este mes</p>
-</div>
-<div className="bg-green-50 p-4 rounded-xl">
-<p className="font-semibold">Meta diaria recomendada:</p>
-<p className="text-2xl font-bold text-green-600">
-${Math.max(resumenDia.totalVentas*1.1,500).toFixed(2)}
-</p>
-<p className="text-sm text-gray-600">10% más que hoy</p>
-</div>
-</div>
-</div>
-</div>
-);
-};
-
-const renderView=()=>{
-switch(currentView){
-case'ventas':return<VentasView/>;
-case'inventario':return<InventarioView/>;
-case'dinero':return<DineroView/>;
-default:return<MainView/>;
-}
-};
-
-return(
-<div className="min-h-screen bg-white">
-<NavBar/>
-<div className="pb-20">{renderView()}</div>
-{currentView!=='main'&&(
-<div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
-<button onClick={()=>setCurrentView('main')}
-className="w-full bg-blue-500 text-white p-4 rounded-xl text-lg font-bold active:scale-95">
-🏠 Volver al Inicio
-</button>
-</div>
-)}
