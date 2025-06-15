@@ -2,692 +2,499 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Tiendita</title>
-    
-    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.22.5/babel.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            background: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-        
-        /* CRITICAL: Fix para teclado Android */
-        input, textarea {
-            font-size: 16px !important;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-        
-        /* Prevenir comportamientos que cierran el teclado */
-        .modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 40;
-        }
-        
-        .modal-content {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            z-index: 50;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        /* Estilos básicos */
-        .btn {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-        
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-        
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-        }
-        
-        .input-field {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-        
-        .card {
-            background: #f3f4f6;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .mb-4 { margin-bottom: 16px; }
-        .mb-3 { margin-bottom: 12px; }
-        .mb-2 { margin-bottom: 8px; }
-        .p-4 { padding: 16px; }
-        .p-3 { padding: 12px; }
-        
-        .navbar {
-            background: #2563eb;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            padding: 12px;
-        }
-        
-        .content {
-            padding-bottom: 80px;
-        }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #f3f4f6; }
+        .navbar { background: #2563eb; color: white; padding: 12px; text-align: center; font-weight: bold; }
+        .container { padding: 16px; padding-bottom: 80px; }
+        .card { background: white; padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-group { margin-bottom: 12px; }
+        .form-label { display: block; font-weight: bold; margin-bottom: 4px; }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; padding: 12px; }
+        .sale-item, .product-item { background: #f3f4f6; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .text-success { color: #10b981; }
+        .text-danger { color: #ef4444; }
+        .hide { display: none; }
     </style>
 </head>
 <body>
-    <div id="root">
-        <div style="text-align: center; padding: 50px;">Cargando Mi Tiendita...</div>
+    <div class="navbar" id="navbar"></div>
+    
+    <div class="container">
+        <!-- Vista Principal -->
+        <div id="mainView">
+            <div class="card" style="text-align: center;">
+                <h1 style="font-size: 24px; margin: 0 0 8px 0;">¡Bienvenido Emprendedor!</h1>
+                <p style="color: #6b7280; margin: 0;">Que tengas un excelente día de ventas, no te rindas</p>
+            </div>
+            
+            <div class="grid-2" style="margin-bottom: 16px;">
+                <button class="btn btn-success" onclick="showView('sales')" style="padding: 30px;">
+                    <div style="font-size: 32px;">💰</div>
+                    <div>Registrar Venta</div>
+                </button>
+                <button class="btn btn-primary" onclick="showView('inventory')" style="padding: 30px;">
+                    <div style="font-size: 32px;">📦</div>
+                    <div>Ver Inventario</div>
+                </button>
+            </div>
+            
+            <div class="card">
+                <h2 style="font-size: 18px; margin: 0 0 12px 0;">📊 Resumen del Día</h2>
+                <div class="flex-between"><span>Ventas:</span><strong>$<span id="totalSales">0.00</span></strong></div>
+                <div class="flex-between"><span>Ganancias:</span><strong class="text-success">$<span id="totalProfit">0.00</span></strong></div>
+                <div class="flex-between"><span>Productos:</span><strong id="totalProducts">0</strong></div>
+            </div>
+            
+            <div class="card">
+                <h2 style="font-size: 18px; margin: 0 0 12px 0;">🧮 Calculadora</h2>
+                <form onsubmit="return false;">
+                    <div class="grid-2" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 8px;">
+                        <input type="number" id="calcCost" placeholder="Costo" class="form-input" oninput="calculate()">
+                        <input type="number" id="calcPrice" placeholder="Precio" class="form-input" oninput="calculate()">
+                        <input type="number" id="calcQty" placeholder="Cant" value="1" class="form-input" oninput="calculate()">
+                    </div>
+                </form>
+                <div id="calcResult" class="hide" style="background: #f3f4f6; padding: 8px; border-radius: 6px; text-align: center;">
+                    <strong>Margen: <span id="calcMargin">0</span>%</strong> | 
+                    <strong class="text-success">Ganancia: $<span id="calcProfit">0.00</span></strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Vista de Ventas -->
+        <div id="salesView" class="hide">
+            <h1 style="font-size: 20px; margin: 0 0 16px 0;">💰 Registrar Venta</h1>
+            
+            <div class="card">
+                <form id="saleForm" onsubmit="registerSale(event)">
+                    <div class="form-group">
+                        <label class="form-label">Producto:</label>
+                        <select id="saleProduct" class="form-input" onchange="updateSaleTotal()" required>
+                            <option value="">Selecciona...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Cantidad:</label>
+                        <div class="grid-2" style="grid-template-columns: auto 1fr auto;">
+                            <button type="button" class="btn btn-danger" onclick="changeSaleQty(-1)">-</button>
+                            <input type="number" id="saleQty" value="1" min="1" class="form-input" style="text-align: center;" oninput="updateSaleTotal()">
+                            <button type="button" class="btn btn-success" onclick="changeSaleQty(1)">+</button>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #d1fae5; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center;">
+                        <strong style="font-size: 20px;">Total: $<span id="saleTotal">0.00</span></strong>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">Registrar Venta</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2 style="font-size: 16px; margin: 0 0 12px 0;">Ventas de Hoy</h2>
+                <div id="salesList"></div>
+            </div>
+        </div>
+        
+        <!-- Vista de Inventario -->
+        <div id="inventoryView" class="hide">
+            <div class="flex-between" style="margin-bottom: 16px;">
+                <h1 style="font-size: 20px; margin: 0;">📦 Inventario</h1>
+                <button class="btn btn-primary" onclick="showProductModal()" style="width: auto; padding: 8px 16px;">+ Nuevo</button>
+            </div>
+            
+            <p style="color: #6b7280; margin: 0 0 12px 0;">Productos: <span id="productCount">0</span>/33</p>
+            
+            <div id="inventoryList"></div>
+        </div>
     </div>
     
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        // Sistema de almacenamiento simple
-        const Storage = {
-            save: (key, data) => {
-                try {
-                    localStorage.setItem(key, JSON.stringify(data));
-                    return true;
-                } catch (e) {
-                    console.error('Error guardando:', e);
-                    return false;
-                }
-            },
-            load: (key, defaultValue = null) => {
-                try {
-                    const item = localStorage.getItem(key);
-                    return item ? JSON.parse(item) : defaultValue;
-                } catch (e) {
-                    console.error('Error cargando:', e);
-                    return defaultValue;
-                }
-            }
+    <!-- Modal de Producto -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="margin: 0 0 16px 0;">Nuevo Producto</h2>
+            <form id="productForm" onsubmit="saveProduct(event)">
+                <input type="hidden" id="productId">
+                
+                <div class="form-group">
+                    <label class="form-label">Nombre:</label>
+                    <input type="text" id="productName" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Stock:</label>
+                    <input type="number" id="productStock" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Costo:</label>
+                    <input type="number" id="productCost" step="0.01" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Precio:</label>
+                    <input type="number" id="productPrice" step="0.01" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Vencimiento:</label>
+                    <input type="date" id="productExpiry" class="form-input" required>
+                </div>
+                
+                <div class="grid-2">
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideProductModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Navegación inferior -->
+    <div id="bottomNav" class="bottom-nav hide">
+        <button class="btn btn-primary" onclick="showView('main')">🏠 Inicio</button>
+    </div>
+    
+    <script>
+        // Estado de la aplicación
+        let state = {
+            inventory: [],
+            sales: [],
+            currentView: 'main'
         };
-
-        function App() {
-            // Estados principales
-            const [view, setView] = useState('main');
-            const [showModal, setShowModal] = useState(false);
-            const [editingProduct, setEditingProduct] = useState(null);
-            
-            // Datos
-            const [inventory, setInventory] = useState(() => 
-                Storage.load('inventory', [
-                    { id: 1, name: 'Coca-Cola 600ml', stock: 24, cost: 12, price: 18, expiry: '2025-08-15' },
-                    { id: 2, name: 'Sabritas Original', stock: 15, cost: 8, price: 15, expiry: '2025-07-20' },
-                    { id: 3, name: 'Pan Bimbo Grande', stock: 8, cost: 25, price: 35, expiry: '2025-06-25' },
-                    { id: 4, name: 'Leche Lala 1L', stock: 12, cost: 18, price: 25, expiry: '2025-06-20' },
-                    { id: 5, name: 'Huevos San Juan', stock: 30, cost: 35, price: 50, expiry: '2025-07-01' }
-                ])
-            );
-            
-            const [sales, setSales] = useState(() => {
-                const today = new Date().toDateString();
-                return Storage.load(`sales_${today}`, []);
-            });
-            
-            // Estados para formularios - NO usar objetos para evitar re-renders
-            const [productName, setProductName] = useState('');
-            const [productStock, setProductStock] = useState('');
-            const [productCost, setProductCost] = useState('');
-            const [productPrice, setProductPrice] = useState('');
-            const [productExpiry, setProductExpiry] = useState('');
-            
-            const [saleProductId, setSaleProductId] = useState('');
-            const [saleQuantity, setSaleQuantity] = useState(1);
-            
-            const [calcCost, setCalcCost] = useState('');
-            const [calcPrice, setCalcPrice] = useState('');
-            const [calcQty, setCalcQty] = useState('1');
-
-            // Guardar inventario cuando cambie
-            useEffect(() => {
-                Storage.save('inventory', inventory);
-            }, [inventory]);
-
-            // Guardar ventas cuando cambien
-            useEffect(() => {
-                const today = new Date().toDateString();
-                Storage.save(`sales_${today}`, sales);
-            }, [sales]);
-
-            // Limpiar ventas a medianoche
-            useEffect(() => {
-                const checkMidnight = setInterval(() => {
-                    const now = new Date();
-                    if (now.getHours() === 0 && now.getMinutes() === 0) {
-                        setSales([]);
-                    }
-                }, 60000);
-                
-                return () => clearInterval(checkMidnight);
-            }, []);
-
-            // Calcular resumen
-            const summary = {
-                totalSales: sales.reduce((sum, s) => sum + s.total, 0),
-                totalProfit: sales.reduce((sum, s) => sum + (s.total - (s.cost * s.quantity)), 0),
-                totalProducts: sales.reduce((sum, s) => sum + s.quantity, 0)
-            };
-
-            // Funciones
-            const registerSale = () => {
-                if (!saleProductId) {
-                    alert('Selecciona un producto');
-                    return;
-                }
-                
-                const product = inventory.find(p => p.id === parseInt(saleProductId));
-                if (!product) return;
-                
-                if (product.stock < saleQuantity) {
-                    alert('Stock insuficiente');
-                    return;
-                }
-                
-                const sale = {
-                    id: Date.now(),
-                    productName: product.name,
-                    quantity: saleQuantity,
-                    price: product.price,
-                    cost: product.cost,
-                    total: product.price * saleQuantity,
-                    time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-                };
-                
-                setSales([...sales, sale]);
-                setInventory(inventory.map(p => 
-                    p.id === product.id 
-                        ? { ...p, stock: p.stock - saleQuantity }
-                        : p
-                ));
-                
-                setSaleProductId('');
-                setSaleQuantity(1);
-                alert('Venta registrada');
-            };
-
-            const saveProduct = () => {
-                if (!productName || !productStock || !productCost || !productPrice || !productExpiry) {
-                    alert('Completa todos los campos');
-                    return;
-                }
-
-                const product = {
-                    id: editingProduct ? editingProduct.id : Date.now(),
-                    name: productName,
-                    stock: parseInt(productStock),
-                    cost: parseFloat(productCost),
-                    price: parseFloat(productPrice),
-                    expiry: productExpiry
-                };
-
-                if (editingProduct) {
-                    setInventory(inventory.map(p => p.id === product.id ? product : p));
+        
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateDate();
+            updateSummary();
+            renderInventory();
+            renderSales();
+            setInterval(checkMidnight, 60000);
+        });
+        
+        // Funciones de almacenamiento
+        function loadData() {
+            try {
+                // Cargar inventario
+                const savedInventory = localStorage.getItem('tiendita_inventory');
+                if (savedInventory) {
+                    state.inventory = JSON.parse(savedInventory);
                 } else {
-                    if (inventory.length >= 33) {
-                        alert('Máximo 33 productos');
-                        return;
-                    }
-                    setInventory([...inventory, product]);
+                    // Datos iniciales
+                    state.inventory = [
+                        { id: 1, name: 'Coca-Cola 600ml', stock: 24, cost: 12, price: 18, expiry: '2025-08-15' },
+                        { id: 2, name: 'Sabritas Original', stock: 15, cost: 8, price: 15, expiry: '2025-07-20' },
+                        { id: 3, name: 'Pan Bimbo Grande', stock: 8, cost: 25, price: 35, expiry: '2025-06-25' },
+                        { id: 4, name: 'Leche Lala 1L', stock: 12, cost: 18, price: 25, expiry: '2025-06-20' },
+                        { id: 5, name: 'Huevos San Juan', stock: 30, cost: 35, price: 50, expiry: '2025-07-01' }
+                    ];
+                    saveInventory();
                 }
                 
-                // Limpiar formulario
-                setProductName('');
-                setProductStock('');
-                setProductCost('');
-                setProductPrice('');
-                setProductExpiry('');
-                setEditingProduct(null);
-                setShowModal(false);
-            };
-
-            const editProduct = (product) => {
-                setEditingProduct(product);
-                setProductName(product.name);
-                setProductStock(product.stock.toString());
-                setProductCost(product.cost.toString());
-                setProductPrice(product.price.toString());
-                setProductExpiry(product.expiry);
-                setShowModal(true);
-            };
-
-            const deleteProduct = (id) => {
-                if (confirm('¿Eliminar producto?')) {
-                    setInventory(inventory.filter(p => p.id !== id));
+                // Cargar ventas del día
+                const today = new Date().toDateString();
+                const savedSales = localStorage.getItem('tiendita_sales_' + today);
+                if (savedSales) {
+                    state.sales = JSON.parse(savedSales);
                 }
-            };
-
-            // Calculadora
-            const calcMargin = () => {
-                const cost = parseFloat(calcCost) || 0;
-                const price = parseFloat(calcPrice) || 0;
-                const qty = parseInt(calcQty) || 1;
-                
-                if (cost > 0 && price > 0) {
-                    const margin = ((price - cost) / cost) * 100;
-                    const profit = (price - cost) * qty;
-                    return { margin, profit };
-                }
-                return { margin: 0, profit: 0 };
-            };
-
-            const calc = calcMargin();
-
-            // Vistas
-            const MainView = () => (
-                <div className="p-4">
-                    <div className="card text-center mb-4">
-                        <h1 style={{fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0'}}>
-                            ¡Bienvenido Emprendedor!
-                        </h1>
-                        <p style={{color: '#6b7280', margin: 0}}>
-                            Que tengas un excelente día de ventas, no te rindas
-                        </p>
-                    </div>
-                    
-                    <div className="grid-2 mb-4">
-                        <button 
-                            onClick={() => setView('sales')}
-                            className="btn btn-success"
-                            style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px'}}
-                        >
-                            <span style={{fontSize: '32px'}}>💰</span>
-                            <span>Registrar Venta</span>
-                        </button>
-                        
-                        <button 
-                            onClick={() => setView('inventory')}
-                            className="btn btn-primary"
-                            style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px'}}
-                        >
-                            <span style={{fontSize: '32px'}}>📦</span>
-                            <span>Ver Inventario</span>
-                        </button>
-                    </div>
-                    
-                    <div className="card mb-4">
-                        <h2 style={{fontSize: '18px', fontWeight: 'bold', marginBottom: '12px'}}>
-                            📊 Resumen del Día
-                        </h2>
-                        <div style={{fontSize: '14px'}}>
-                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
-                                <span>Ventas:</span>
-                                <strong>${summary.totalSales.toFixed(2)}</strong>
-                            </div>
-                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '4px'}}>
-                                <span>Ganancias:</span>
-                                <strong style={{color: '#10b981'}}>${summary.totalProfit.toFixed(2)}</strong>
-                            </div>
-                            <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                                <span>Productos:</span>
-                                <strong>{summary.totalProducts}</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="card">
-                        <h2 style={{fontSize: '18px', fontWeight: 'bold', marginBottom: '12px'}}>
-                            🧮 Calculadora
-                        </h2>
-                        <div className="grid-2 mb-2" style={{gridTemplateColumns: '1fr 1fr 1fr'}}>
-                            <input 
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="Costo"
-                                value={calcCost}
-                                onChange={(e) => setCalcCost(e.target.value)}
-                                style={{padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px'}}
-                            />
-                            <input 
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="Precio"
-                                value={calcPrice}
-                                onChange={(e) => setCalcPrice(e.target.value)}
-                                style={{padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px'}}
-                            />
-                            <input 
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="Cant"
-                                value={calcQty}
-                                onChange={(e) => setCalcQty(e.target.value)}
-                                style={{padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px'}}
-                            />
-                        </div>
-                        {calc.margin > 0 && (
-                            <div style={{background: 'white', padding: '8px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between'}}>
-                                <strong>{calc.margin.toFixed(1)}%</strong>
-                                <strong style={{color: '#10b981'}}>${calc.profit.toFixed(2)}</strong>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-
-            const SalesView = () => {
-                const availableProducts = inventory.filter(p => p.stock > 0).sort((a, b) => a.name.localeCompare(b.name));
-                const selectedProduct = inventory.find(p => p.id === parseInt(saleProductId));
-                const saleTotal = selectedProduct ? selectedProduct.price * saleQuantity : 0;
-                
-                return (
-                    <div className="p-4">
-                        <h1 style={{fontSize: '20px', fontWeight: 'bold', marginBottom: '16px'}}>
-                            💰 Registrar Venta
-                        </h1>
-                        
-                        <div className="card mb-4">
-                            <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-                                Producto:
-                            </label>
-                            <select 
-                                value={saleProductId}
-                                onChange={(e) => setSaleProductId(e.target.value)}
-                                className="input-field"
-                                style={{marginBottom: '16px'}}
-                            >
-                                <option value="">Selecciona...</option>
-                                {availableProducts.map(p => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name} - ${p.price} ({p.stock})
-                                    </option>
-                                ))}
-                            </select>
-                            
-                            <label style={{display: 'block', fontWeight: 'bold', marginBottom: '8px'}}>
-                                Cantidad:
-                            </label>
-                            <div style={{display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px'}}>
-                                <button 
-                                    onClick={() => setSaleQuantity(Math.max(1, saleQuantity - 1))}
-                                    className="btn btn-danger"
-                                    style={{width: '48px'}}
-                                >
-                                    -
-                                </button>
-                                <input 
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={saleQuantity}
-                                    onChange={(e) => setSaleQuantity(parseInt(e.target.value) || 0)}
-                                    style={{width: '80px', textAlign: 'center', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px'}}
-                                />
-                                <button 
-                                    onClick={() => setSaleQuantity(saleQuantity + 1)}
-                                    className="btn btn-success"
-                                    style={{width: '48px'}}
-                                >
-                                    +
-                                </button>
-                            </div>
-                            
-                            <div style={{background: '#d1fae5', padding: '12px', borderRadius: '8px', marginBottom: '16px'}}>
-                                <p style={{fontSize: '20px', fontWeight: 'bold', textAlign: 'center', margin: 0}}>
-                                    Total: ${saleTotal.toFixed(2)}
-                                </p>
-                            </div>
-                            
-                            <button 
-                                onClick={registerSale}
-                                className="btn btn-success"
-                                style={{width: '100%'}}
-                            >
-                                Registrar Venta
-                            </button>
-                        </div>
-                        
-                        <div className="card">
-                            <h2 style={{fontSize: '16px', fontWeight: 'bold', marginBottom: '12px'}}>
-                                Ventas de Hoy
-                            </h2>
-                            {sales.length === 0 ? (
-                                <p style={{textAlign: 'center', color: '#6b7280'}}>Sin ventas</p>
-                            ) : (
-                                <div style={{maxHeight: '200px', overflowY: 'auto'}}>
-                                    {sales.map(s => (
-                                        <div key={s.id} style={{background: 'white', padding: '8px', borderRadius: '6px', marginBottom: '8px'}}>
-                                            <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                                                <strong>{s.productName}</strong>
-                                                <span>${s.total.toFixed(2)}</span>
-                                            </div>
-                                            <div style={{fontSize: '12px', color: '#6b7280'}}>
-                                                {s.quantity} unidades • {s.time}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            };
-
-            const InventoryView = () => (
-                <div className="p-4">
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-                        <h1 style={{fontSize: '20px', fontWeight: 'bold'}}>
-                            📦 Inventario
-                        </h1>
-                        <button 
-                            onClick={() => {
-                                setEditingProduct(null);
-                                setProductName('');
-                                setProductStock('');
-                                setProductCost('');
-                                setProductPrice('');
-                                setProductExpiry('');
-                                setShowModal(true);
-                            }}
-                            className="btn btn-primary"
-                            style={{padding: '8px 16px'}}
-                        >
-                            + Nuevo
-                        </button>
-                    </div>
-                    
-                    <p style={{fontSize: '14px', color: '#6b7280', marginBottom: '12px'}}>
-                        Productos: {inventory.length}/33
-                    </p>
-                    
-                    <div style={{maxHeight: '60vh', overflowY: 'auto'}}>
-                        {inventory.map(product => (
-                            <div key={product.id} className="card">
-                                <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
-                                    <strong>{product.name}</strong>
-                                    <div style={{display: 'flex', gap: '8px'}}>
-                                        <button 
-                                            onClick={() => editProduct(product)}
-                                            style={{background: 'none', border: 'none', fontSize: '18px'}}
-                                        >
-                                            ✏️
-                                        </button>
-                                        <button 
-                                            onClick={() => deleteProduct(product.id)}
-                                            style={{background: 'none', border: 'none', fontSize: '18px'}}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </div>
-                                <div style={{fontSize: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px'}}>
-                                    <div>Stock: {product.stock}</div>
-                                    <div>Precio: ${product.price}</div>
-                                    <div>Costo: ${product.cost}</div>
-                                    <div>Vence: {new Date(product.expiry).toLocaleDateString('es-MX')}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    
-                    {showModal && (
-                        <>
-                            <div className="modal-backdrop" onClick={() => setShowModal(false)} />
-                            <div className="modal-content">
-                                <h2 style={{fontSize: '18px', fontWeight: 'bold', marginBottom: '16px'}}>
-                                    {editingProduct ? 'Editar' : 'Nuevo'} Producto
-                                </h2>
-                                
-                                <input 
-                                    type="text"
-                                    placeholder="Nombre del producto"
-                                    value={productName}
-                                    onChange={(e) => setProductName(e.target.value)}
-                                    className="input-field"
-                                    autoComplete="off"
-                                />
-                                
-                                <input 
-                                    type="text"
-                                    inputMode="numeric"
-                                    placeholder="Cantidad en stock"
-                                    value={productStock}
-                                    onChange={(e) => setProductStock(e.target.value)}
-                                    className="input-field"
-                                />
-                                
-                                <input 
-                                    type="text"
-                                    inputMode="decimal"
-                                    placeholder="Costo"
-                                    value={productCost}
-                                    onChange={(e) => setProductCost(e.target.value)}
-                                    className="input-field"
-                                />
-                                
-                                <input 
-                                    type="text"
-                                    inputMode="decimal"
-                                    placeholder="Precio de venta"
-                                    value={productPrice}
-                                    onChange={(e) => setProductPrice(e.target.value)}
-                                    className="input-field"
-                                />
-                                
-                                <input 
-                                    type="date"
-                                    value={productExpiry}
-                                    onChange={(e) => setProductExpiry(e.target.value)}
-                                    className="input-field"
-                                />
-                                
-                                <div className="grid-2">
-                                    <button 
-                                        onClick={saveProduct}
-                                        className="btn btn-success"
-                                    >
-                                        Guardar
-                                    </button>
-                                    <button 
-                                        onClick={() => setShowModal(false)}
-                                        className="btn btn-secondary"
-                                    >
-                                        Cancelar
-                                    </button>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            );
-
-            return (
-                <div>
-                    <div className="navbar">
-                        {new Date().toLocaleDateString('es-MX', { 
-                            weekday: 'long', 
-                            day: 'numeric', 
-                            month: 'long' 
-                        })}
-                    </div>
-                    
-                    <div className="content">
-                        {view === 'main' && <MainView />}
-                        {view === 'sales' && <SalesView />}
-                        {view === 'inventory' && <InventoryView />}
-                    </div>
-                    
-                    {view !== 'main' && (
-                        <div className="bottom-nav">
-                            <button 
-                                onClick={() => setView('main')}
-                                className="btn btn-primary"
-                                style={{width: '100%'}}
-                            >
-                                🏠 Inicio
-                            </button>
-                        </div>
-                    )}
-                </div>
-            );
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+            }
         }
-
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        
+        function saveInventory() {
+            try {
+                localStorage.setItem('tiendita_inventory', JSON.stringify(state.inventory));
+            } catch (e) {
+                console.error('Error guardando inventario:', e);
+            }
+        }
+        
+        function saveSales() {
+            try {
+                const today = new Date().toDateString();
+                localStorage.setItem('tiendita_sales_' + today, JSON.stringify(state.sales));
+            } catch (e) {
+                console.error('Error guardando ventas:', e);
+            }
+        }
+        
+        // Funciones de UI
+        function showView(view) {
+            document.getElementById('mainView').classList.toggle('hide', view !== 'main');
+            document.getElementById('salesView').classList.toggle('hide', view !== 'sales');
+            document.getElementById('inventoryView').classList.toggle('hide', view !== 'inventory');
+            document.getElementById('bottomNav').classList.toggle('hide', view === 'main');
+            
+            state.currentView = view;
+            
+            if (view === 'sales') {
+                updateSaleProductList();
+            }
+        }
+        
+        function updateDate() {
+            const date = new Date().toLocaleDateString('es-MX', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long' 
+            });
+            document.getElementById('navbar').textContent = date;
+        }
+        
+        function updateSummary() {
+            const summary = state.sales.reduce((acc, sale) => {
+                acc.totalSales += sale.total;
+                acc.totalProfit += (sale.total - (sale.cost * sale.quantity));
+                acc.totalProducts += sale.quantity;
+                return acc;
+            }, { totalSales: 0, totalProfit: 0, totalProducts: 0 });
+            
+            document.getElementById('totalSales').textContent = summary.totalSales.toFixed(2);
+            document.getElementById('totalProfit').textContent = summary.totalProfit.toFixed(2);
+            document.getElementById('totalProducts').textContent = summary.totalProducts;
+        }
+        
+        // Calculadora
+        function calculate() {
+            const cost = parseFloat(document.getElementById('calcCost').value) || 0;
+            const price = parseFloat(document.getElementById('calcPrice').value) || 0;
+            const qty = parseInt(document.getElementById('calcQty').value) || 1;
+            
+            if (cost > 0 && price > 0) {
+                const margin = ((price - cost) / cost) * 100;
+                const profit = (price - cost) * qty;
+                
+                document.getElementById('calcMargin').textContent = margin.toFixed(1);
+                document.getElementById('calcProfit').textContent = profit.toFixed(2);
+                document.getElementById('calcResult').classList.remove('hide');
+            } else {
+                document.getElementById('calcResult').classList.add('hide');
+            }
+        }
+        
+        // Ventas
+        function updateSaleProductList() {
+            const select = document.getElementById('saleProduct');
+            select.innerHTML = '<option value="">Selecciona...</option>';
+            
+            state.inventory
+                .filter(p => p.stock > 0)
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} - $${product.price} (${product.stock})`;
+                    select.appendChild(option);
+                });
+        }
+        
+        function updateSaleTotal() {
+            const productId = parseInt(document.getElementById('saleProduct').value);
+            const quantity = parseInt(document.getElementById('saleQty').value) || 0;
+            
+            if (productId) {
+                const product = state.inventory.find(p => p.id === productId);
+                if (product) {
+                    const total = product.price * quantity;
+                    document.getElementById('saleTotal').textContent = total.toFixed(2);
+                }
+            } else {
+                document.getElementById('saleTotal').textContent = '0.00';
+            }
+        }
+        
+        function changeSaleQty(delta) {
+            const input = document.getElementById('saleQty');
+            const newValue = Math.max(1, parseInt(input.value) + delta);
+            input.value = newValue;
+            updateSaleTotal();
+        }
+        
+        function registerSale(event) {
+            event.preventDefault();
+            
+            const productId = parseInt(document.getElementById('saleProduct').value);
+            const quantity = parseInt(document.getElementById('saleQty').value);
+            
+            const product = state.inventory.find(p => p.id === productId);
+            if (!product) return;
+            
+            if (product.stock < quantity) {
+                alert('Stock insuficiente');
+                return;
+            }
+            
+            const sale = {
+                id: Date.now(),
+                productName: product.name,
+                quantity: quantity,
+                price: product.price,
+                cost: product.cost,
+                total: product.price * quantity,
+                time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+            };
+            
+            state.sales.push(sale);
+            product.stock -= quantity;
+            
+            saveInventory();
+            saveSales();
+            updateSummary();
+            renderSales();
+            
+            // Limpiar formulario
+            document.getElementById('saleForm').reset();
+            document.getElementById('saleQty').value = 1;
+            updateSaleTotal();
+            updateSaleProductList();
+            
+            alert('Venta registrada');
+        }
+        
+        function renderSales() {
+            const container = document.getElementById('salesList');
+            
+            if (state.sales.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7280;">Sin ventas</p>';
+                return;
+            }
+            
+            container.innerHTML = state.sales.map(sale => `
+                <div class="sale-item">
+                    <div class="flex-between">
+                        <strong>${sale.productName}</strong>
+                        <span>$${sale.total.toFixed(2)}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #6b7280;">
+                        ${sale.quantity} unidades • ${sale.time}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Inventario
+        function renderInventory() {
+            const container = document.getElementById('inventoryList');
+            document.getElementById('productCount').textContent = state.inventory.length;
+            
+            if (state.inventory.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7280;">Sin productos</p>';
+                return;
+            }
+            
+            container.innerHTML = state.inventory.map(product => `
+                <div class="product-item">
+                    <div class="flex-between">
+                        <strong>${product.name}</strong>
+                        <div>
+                            <button onclick="editProduct(${product.id})" style="background: none; border: none; font-size: 18px; cursor: pointer;">✏️</button>
+                            <button onclick="deleteProduct(${product.id})" style="background: none; border: none; font-size: 18px; cursor: pointer;">🗑️</button>
+                        </div>
+                    </div>
+                    <div style="font-size: 14px;">
+                        <div>Stock: ${product.stock} | Precio: $${product.price}</div>
+                        <div>Costo: $${product.cost} | Vence: ${new Date(product.expiry).toLocaleDateString('es-MX')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showProductModal(product = null) {
+            if (product) {
+                document.getElementById('modalTitle').textContent = 'Editar Producto';
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productStock').value = product.stock;
+                document.getElementById('productCost').value = product.cost;
+                document.getElementById('productPrice').value = product.price;
+                document.getElementById('productExpiry').value = product.expiry;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Nuevo Producto';
+                document.getElementById('productForm').reset();
+                document.getElementById('productId').value = '';
+            }
+            
+            document.getElementById('productModal').classList.add('active');
+        }
+        
+        function hideProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+        
+        function editProduct(id) {
+            const product = state.inventory.find(p => p.id === id);
+            if (product) {
+                showProductModal(product);
+            }
+        }
+        
+        function deleteProduct(id) {
+            if (confirm('¿Eliminar producto?')) {
+                state.inventory = state.inventory.filter(p => p.id !== id);
+                saveInventory();
+                renderInventory();
+            }
+        }
+        
+        function saveProduct(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('productId').value;
+            const product = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('productName').value,
+                stock: parseInt(document.getElementById('productStock').value),
+                cost: parseFloat(document.getElementById('productCost').value),
+                price: parseFloat(document.getElementById('productPrice').value),
+                expiry: document.getElementById('productExpiry').value
+            };
+            
+            if (id) {
+                // Editar
+                const index = state.inventory.findIndex(p => p.id === product.id);
+                if (index !== -1) {
+                    state.inventory[index] = product;
+                }
+            } else {
+                // Nuevo
+                if (state.inventory.length >= 33) {
+                    alert('Máximo 33 productos');
+                    return;
+                }
+                state.inventory.push(product);
+            }
+            
+            saveInventory();
+            renderInventory();
+            hideProductModal();
+        }
+        
+        // Verificar medianoche
+        function checkMidnight() {
+            const now = new Date();
+            if (now.getHours() === 0 && now.getMinutes() === 0) {
+                state.sales = [];
+                saveSales();
+                updateSummary();
+                renderSales();
+            }
+        }
     </script>
 </body>
 </html>
