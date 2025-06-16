@@ -73,6 +73,10 @@
                     <strong class="text-success">Ganancia: $<span id="calcProfit">0.00</span></strong>
                 </div>
             </div>
+            
+            <button class="btn" onclick="enviarFeedback()" style="margin-top: 16px; background: #25D366; color: white;">
+                💬 Enviar Comentarios por WhatsApp
+            </button>
         </div>
         
         <!-- Vista de Ventas -->
@@ -590,6 +594,56 @@
             } catch (error) {
                 alert('❌ Error: El texto no es válido.\n\nAsegúrate de copiar TODO el texto del backup.');
             }
+        }
+        
+        // Función de Feedback por WhatsApp
+        function enviarFeedback() {
+            // Calcular días de uso
+            const diasUso = calcularDiasUso();
+            
+            // Recopilar estadísticas
+            const ventasHoy = state.sales.length;
+            const totalVentasHoy = state.sales.reduce((sum, s) => sum + s.total, 0);
+            const totalProductos = state.inventory.length;
+            
+            // Crear mensaje
+            const mensaje = `🏪 *Feedback Mi Tiendita*\n\n` +
+                `📊 *Mis estadísticas:*\n` +
+                `• Días usando la app: ${diasUso}\n` +
+                `• Productos en inventario: ${totalProductos}\n` +
+                `• Ventas registradas hoy: ${ventasHoy}\n` +
+                `• Total vendido hoy: ${totalVentasHoy.toFixed(2)}\n\n` +
+                `💭 *Mi experiencia:*\n` +
+                `(Escribe aquí qué te gusta, qué mejorarías o cualquier comentario)\n\n` +
+                `⭐ *Calificación:* _/5`;
+            
+            // Tu número de WhatsApp (cambia esto por tu número real)
+            const numeroWhatsApp = '525569352702'; // Formato: código país + número
+            
+            // Crear URL de WhatsApp
+            const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+            
+            // Abrir WhatsApp
+            window.open(url, '_blank');
+        }
+        
+        function calcularDiasUso() {
+            let primerUso = localStorage.getItem('tiendita_primer_uso');
+            
+            if (!primerUso) {
+                // Primera vez que usa la app
+                primerUso = new Date().toISOString();
+                localStorage.setItem('tiendita_primer_uso', primerUso);
+                return 0;
+            }
+            
+            // Calcular días transcurridos
+            const fechaInicio = new Date(primerUso);
+            const fechaHoy = new Date();
+            const diferencia = fechaHoy - fechaInicio;
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            
+            return dias;
         }
     </script>
 </body>
