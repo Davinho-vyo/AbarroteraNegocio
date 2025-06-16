@@ -122,20 +122,20 @@
                 <button class="btn btn-primary" onclick="showProductModal()" style="width: auto; padding: 8px 16px;">+ Nuevo</button>
             </div>
             
-            <p style="color: #6b7280; margin: 0 0 12px 0;">Productos: <span id="productCount">0</span>/33</p>
+            <p style="color: #6b7280; margin: 0 0 12px 0;">Productos: <span id="productCount">0</span>/50</p>
             
             <!-- Botones de Backup -->
             <div class="card" style="background: #fef3c7; border: 1px solid #fbbf24;">
-                <h3 style="font-size: 16px; margin: 0 0 8px 0;">💾 Backup de Inventario</h3>
-                <div class="grid-2" style="gap: 8px;">
-                    <button class="btn btn-secondary" onclick="exportarInventario()" style="background: #059669;">
+                <h3 style="font-size: 14px; margin: 0 0 6px 0;">💾 Backup de Inventario</h3>
+                <div class="grid-2" style="gap: 6px;">
+                    <button class="btn btn-secondary" onclick="exportarInventario()" style="background: #059669; padding: 8px 12px; font-size: 14px;">
                         📋 Copiar Inventario
                     </button>
-                    <button class="btn btn-secondary" onclick="mostrarImportDialog()" style="background: #dc2626;">
+                    <button class="btn btn-secondary" onclick="mostrarImportDialog()" style="background: #dc2626; padding: 8px 12px; font-size: 14px;">
                         📥 Restaurar Inventario
                     </button>
                 </div>
-                <p style="font-size: 12px; color: #78716c; margin: 8px 0 0 0;">
+                <p style="font-size: 11px; color: #78716c; margin: 6px 0 0 0;">
                     Usa estos botones antes de actualizar la app
                 </p>
             </div>
@@ -418,7 +418,10 @@
                 return;
             }
             
-            container.innerHTML = state.inventory.map(product => `
+            // Ordenar alfabéticamente por nombre
+            const sortedInventory = [...state.inventory].sort((a, b) => a.name.localeCompare(b.name));
+            
+            container.innerHTML = sortedInventory.map(product => `
                 <div class="product-item">
                     <div class="flex-between">
                         <strong>${product.name}</strong>
@@ -428,8 +431,8 @@
                         </div>
                     </div>
                     <div style="font-size: 14px;">
-                        <div>Stock: ${product.stock} | Precio: $${product.price}</div>
-                        <div>Costo: $${product.cost} | Vence: ${new Date(product.expiry).toLocaleDateString('es-MX')}</div>
+                        <div>Stock: ${product.stock} | Precio: ${product.price}</div>
+                        <div>Costo: ${product.cost} | Vence: ${new Date(product.expiry).toLocaleDateString('es-MX')}</div>
                     </div>
                 </div>
             `).join('');
@@ -493,8 +496,8 @@
                 }
             } else {
                 // Nuevo
-                if (state.inventory.length >= 33) {
-                    alert('Máximo 33 productos');
+                if (state.inventory.length >= 50) {
+                    alert('Máximo 50 productos');
                     return;
                 }
                 state.inventory.push(product);
@@ -647,4 +650,4 @@
         }
     </script>
 </body>
-</html>
+</html
