@@ -120,6 +120,22 @@
             
             <p style="color: #6b7280; margin: 0 0 12px 0;">Productos: <span id="productCount">0</span>/33</p>
             
+            <!-- Botones de Backup -->
+            <div class="card" style="background: #fef3c7; border: 1px solid #fbbf24;">
+                <h3 style="font-size: 16px; margin: 0 0 8px 0;">💾 Backup de Inventario</h3>
+                <div class="grid-2" style="gap: 8px;">
+                    <button class="btn btn-secondary" onclick="exportarInventario()" style="background: #059669;">
+                        📋 Copiar Inventario
+                    </button>
+                    <button class="btn btn-secondary" onclick="mostrarImportDialog()" style="background: #dc2626;">
+                        📥 Restaurar Inventario
+                    </button>
+                </div>
+                <p style="font-size: 12px; color: #78716c; margin: 8px 0 0 0;">
+                    Usa estos botones antes de actualizar la app
+                </p>
+            </div>
+            
             <div id="inventoryList"></div>
         </div>
     </div>
@@ -493,6 +509,86 @@
                 saveSales();
                 updateSummary();
                 renderSales();
+            }
+        }
+        
+        // Funciones de Backup
+        function exportarInventario() {
+            if (state.inventory.length === 0) {
+                alert('No hay productos para exportar');
+                return;
+            }
+            
+            const backup = {
+                version: '1.0',
+                fecha: new Date().toLocaleString('es-MX'),
+                totalProductos: state.inventory.length,
+                productos: state.inventory
+            };
+            
+            const textoBackup = JSON.stringify(backup);
+            
+            // Intentar copiar al portapapeles
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textoBackup).then(() => {
+                    alert(`✅ Inventario copiado!\n\n${state.inventory.length} productos guardados.\n\nPégalo en WhatsApp, Notas o cualquier app para guardarlo.`);
+                }).catch(() => {
+                    // Fallback si falla el portapapeles
+                    mostrarTextoParaCopiar(textoBackup);
+                });
+            } else {
+                // Fallback para navegadores sin soporte
+                mostrarTextoParaCopiar(textoBackup);
+            }
+        }
+        
+        function mostrarTextoParaCopiar(texto) {
+            const textarea = document.createElement('textarea');
+            textarea.value = texto;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert('✅ Inventario copiado! Pégalo en un lugar seguro.');
+            } catch (err) {
+                prompt('Copia este texto manualmente:', texto);
+            }
+            
+            document.body.removeChild(textarea);
+        }
+        
+        function mostrarImportDialog() {
+            const textoBackup = prompt('Pega aquí el texto de tu inventario guardado:');
+            
+            if (!textoBackup) return;
+            
+            try {
+                const backup = JSON.parse(textoBackup);
+                
+                if (!backup.productos || !Array.isArray(backup.productos)) {
+                    throw new Error('Formato inválido');
+                }
+                
+                const confirmacion = confirm(
+                    `¿Restaurar inventario?\n\n` +
+                    `Fecha del backup: ${backup.fecha || 'Desconocida'}\n` +
+                    `Productos a restaurar: ${backup.productos.length}\n\n` +
+                    `⚠️ Esto REEMPLAZARÁ tu inventario actual`
+                );
+                
+                if (confirmacion) {
+                    state.inventory = backup.productos;
+                    saveInventory();
+                    renderInventory();
+                    updateSaleProductList();
+                    alert(`✅ ¡Inventario restaurado!\n\n${backup.productos.length} productos cargados.`);
+                }
+                
+            } catch (error) {
+                alert('❌ Error: El texto no es válido.\n\nAsegúrate de copiar TODO el texto del backup.');
             }
         }
     </script>
