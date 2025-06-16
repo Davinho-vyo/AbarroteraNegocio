@@ -651,6 +651,144 @@
             
             return dias;
         }
+        
+        // Función para capturar ventas del día
+        function capturarVentas() {
+            // Crear un canvas temporal para la captura
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Configurar tamaño del canvas (tamaño de pantalla móvil)
+            canvas.width = 400;
+            canvas.height = 600;
+            
+            // Fondo blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Configurar fuente
+            ctx.fillStyle = '#1f2937';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            
+            // Título principal
+            ctx.fillText('Mi Tiendita', canvas.width / 2, 40);
+            
+            // Fecha
+            const fecha = new Date().toLocaleDateString('es-MX', { 
+                weekday: 'long', 
+                day: 'numeric', 
+                month: 'long',
+                year: 'numeric'
+            });
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#6b7280';
+            ctx.fillText(fecha, canvas.width / 2, 70);
+            
+            // Línea separadora
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(30, 90);
+            ctx.lineTo(370, 90);
+            ctx.stroke();
+            
+            // Resumen del día
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = '#1f2937';
+            ctx.textAlign = 'left';
+            ctx.fillText('📊 Resumen del Día', 30, 120);
+            
+            // Calcular totales
+            const summary = state.sales.reduce((acc, sale) => {
+                acc.totalSales += sale.total;
+                acc.totalProfit += (sale.total - (sale.cost * sale.quantity));
+                acc.totalProducts += sale.quantity;
+                return acc;
+            }, { totalSales: 0, totalProfit: 0, totalProducts: 0 });
+            
+            // Mostrar resumen
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#374151';
+            let yPos = 150;
+            
+            ctx.fillText(`💰 Total Ventas: ${summary.totalSales.toFixed(2)}`, 40, yPos);
+            yPos += 25;
+            ctx.fillStyle = '#10b981';
+            ctx.fillText(`💚 Ganancias: ${summary.totalProfit.toFixed(2)}`, 40, yPos);
+            yPos += 25;
+            ctx.fillStyle = '#374151';
+            ctx.fillText(`📦 Productos vendidos: ${summary.totalProducts}`, 40, yPos);
+            yPos += 40;
+            
+            // Lista de ventas
+            if (state.sales.length > 0) {
+                ctx.font = 'bold 16px Arial';
+                ctx.fillStyle = '#1f2937';
+                ctx.fillText('🧾 Detalle de Ventas', 30, yPos);
+                yPos += 30;
+                
+                ctx.font = '12px Arial';
+                ctx.fillStyle = '#374151';
+                
+                state.sales.forEach((sale, index) => {
+                    if (yPos > 550) return; // Evitar que se salga del canvas
+                    
+                    // Nombre del producto y hora
+                    ctx.fillText(`${sale.time} - ${sale.productName}`, 40, yPos);
+                    yPos += 15;
+                    
+                    // Cantidad y total
+                    ctx.fillStyle = '#6b7280';
+                    ctx.fillText(`   ${sale.quantity} unidades × ${sale.price} = ${sale.total.toFixed(2)}`, 40, yPos);
+                    yPos += 20;
+                    
+                    ctx.fillStyle = '#374151';
+                });
+            } else {
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#9ca3af';
+                ctx.textAlign = 'center';
+                ctx.fillText('No hay ventas registradas hoy', canvas.width / 2, yPos);
+            }
+            
+            // Pie de página
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#9ca3af';
+            ctx.textAlign = 'center';
+            ctx.fillText('Generado por Mi Tiendita', canvas.width / 2, canvas.height - 20);
+            
+            // Convertir canvas a imagen y descargar
+            try {
+                // Crear enlace de descarga
+                const link = document.createElement('a');
+                link.download = `ventas_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                
+                // Simular clic para descargar
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                alert('📸 ¡Captura guardada!\n\nLa imagen se descargó en tu dispositivo.\nPuedes encontrarla en la carpeta de Descargas.');
+                
+            } catch (error) {
+                // Fallback: mostrar la imagen en una nueva ventana
+                const newWindow = window.open();
+                newWindow.document.write(`
+                    <html>
+                        <head><title>Ventas del Día - Mi Tiendita</title></head>
+                        <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6;">
+                            <div style="text-align: center;">
+                                <img src="${canvas.toDataURL('image/png')}" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                <p style="margin-top: 20px; color: #6b7280;">Haz clic derecho en la imagen y selecciona "Guardar imagen como..."</p>
+                            </div>
+                        </body>
+                    </html>
+                `);
+                newWindow.document.close();
+            }
+        }
     </script>
 </body>
 </html
