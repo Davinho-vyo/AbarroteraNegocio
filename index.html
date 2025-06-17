@@ -4,6 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StoreFlow</title>
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-P34TJT8XE1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        
+        // Tu ID de Google Analytics configurado
+        gtag('config', 'G-P34TJT8XE1', {
+            // Configuraciones de privacidad
+            anonymize_ip: true,
+            allow_google_signals: false,
+            allow_ad_personalization_signals: false
+        });
+        
+        // Función para trackear eventos personalizados
+        function trackEvent(eventName, parameters = {}) {
+            gtag('event', eventName, {
+                event_category: 'storeflow_action',
+                event_label: eventName,
+                ...parameters
+            });
+        }
+        
+        // Trackear primera visita
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si es primera visita
+            const isFirstVisit = !localStorage.getItem('storeflow_visited');
+            if (isFirstVisit) {
+                localStorage.setItem('storeflow_visited', 'true');
+                trackEvent('primera_visita', {
+                    custom_parameter: 'nuevo_usuario'
+                });
+            }
+            
+            // Trackear carga de la app
+            trackEvent('app_cargada', {
+                timestamp: new Date().toISOString()
+            });
+        });
+    </script>
+    
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; margin: 0; background: #f3f4f6; }
@@ -217,6 +260,10 @@
                 const savedInventory = localStorage.getItem('tiendita_inventory');
                 if (savedInventory) {
                     state.inventory = JSON.parse(savedInventory);
+                    // Trackear carga de inventario existente
+                    trackEvent('inventario_cargado', {
+                        productos_count: state.inventory.length
+                    });
                 } else {
                     // Datos iniciales
                     state.inventory = [
@@ -227,6 +274,10 @@
                         { id: 5, name: 'Huevos San Juan', stock: 30, cost: 35, price: 50, expiry: '2025-07-01' }
                     ];
                     saveInventory();
+                    // Trackear usuario nuevo con productos de ejemplo
+                    trackEvent('productos_ejemplo_cargados', {
+                        productos_count: state.inventory.length
+                    });
                 }
                 
                 // Cargar ventas del día
@@ -234,17 +285,30 @@
                 const savedSales = localStorage.getItem('tiendita_sales_' + today);
                 if (savedSales) {
                     state.sales = JSON.parse(savedSales);
+                    // Trackear ventas existentes del día
+                    trackEvent('ventas_dia_cargadas', {
+                        ventas_count: state.sales.length
+                    });
                 }
             } catch (e) {
                 console.error('Error cargando datos:', e);
+                trackEvent('error_carga_datos', {
+                    error_message: e.message
+                });
             }
         }
         
         function saveInventory() {
             try {
                 localStorage.setItem('tiendita_inventory', JSON.stringify(state.inventory));
+                trackEvent('inventario_guardado', {
+                    productos_count: state.inventory.length
+                });
             } catch (e) {
                 console.error('Error guardando inventario:', e);
+                trackEvent('error_guardar_inventario', {
+                    error_message: e.message
+                });
             }
         }
         
@@ -252,8 +316,14 @@
             try {
                 const today = new Date().toDateString();
                 localStorage.setItem('tiendita_sales_' + today, JSON.stringify(state.sales));
+                trackEvent('ventas_guardadas', {
+                    ventas_count: state.sales.length
+                });
             } catch (e) {
                 console.error('Error guardando ventas:', e);
+                trackEvent('error_guardar_ventas', {
+                    error_message: e.message
+                });
             }
         }
         
@@ -266,8 +336,17 @@
             
             state.currentView = view;
             
+            // Trackear navegación
+            trackEvent('vista_navegada', {
+                vista_destino: view,
+                vista_anterior: state.currentView
+            });
+            
             if (view === 'sales') {
                 updateSaleProductList();
+                trackEvent('vista_ventas_abierta');
+            } else if (view === 'inventory') {
+                trackEvent('vista_inventario_abierta');
             }
         }
         
@@ -306,6 +385,12 @@
                 document.getElementById('calcMargin').textContent = margin.toFixed(1);
                 document.getElementById('calcProfit').textContent = profit.toFixed(2);
                 document.getElementById('calcResult').classList.remove('hide');
+                
+                // Trackear uso de calculadora
+                trackEvent('calculadora_usada', {
+                    margen_calculado: margin.toFixed(1),
+                    ganancia_calculada: profit.toFixed(2)
+                });
             } else {
                 document.getElementById('calcResult').classList.add('hide');
             }
@@ -360,6 +445,11 @@
             
             if (product.stock < quantity) {
                 alert('Stock insuficiente');
+                trackEvent('error_stock_insuficiente', {
+                    producto_id: productId,
+                    stock_disponible: product.stock,
+                    cantidad_solicitada: quantity
+                });
                 return;
             }
             
@@ -380,6 +470,14 @@
             saveSales();
             updateSummary();
             renderSales();
+            
+            // Trackear venta registrada
+            trackEvent('venta_registrada', {
+                producto_nombre: product.name,
+                cantidad: quantity,
+                total_venta: sale.total.toFixed(2),
+                ganancia: ((sale.price - sale.cost) * quantity).toFixed(2)
+            });
             
             // Limpiar formulario
             document.getElementById('saleForm').reset();
@@ -450,10 +548,17 @@
                 document.getElementById('productCost').value = product.cost;
                 document.getElementById('productPrice').value = product.price;
                 document.getElementById('productExpiry').value = product.expiry;
+                
+                trackEvent('modal_editar_producto_abierto', {
+                    producto_id: product.id,
+                    producto_nombre: product.name
+                });
             } else {
                 document.getElementById('modalTitle').textContent = 'Nuevo Producto';
                 document.getElementById('productForm').reset();
                 document.getElementById('productId').value = '';
+                
+                trackEvent('modal_nuevo_producto_abierto');
             }
             
             document.getElementById('productModal').classList.add('active');
@@ -461,6 +566,7 @@
         
         function hideProductModal() {
             document.getElementById('productModal').classList.remove('active');
+            trackEvent('modal_producto_cerrado');
         }
         
         function editProduct(id) {
@@ -472,9 +578,15 @@
         
         function deleteProduct(id) {
             if (confirm('¿Eliminar producto?')) {
+                const product = state.inventory.find(p => p.id === id);
                 state.inventory = state.inventory.filter(p => p.id !== id);
                 saveInventory();
                 renderInventory();
+                
+                trackEvent('producto_eliminado', {
+                    producto_id: id,
+                    producto_nombre: product ? product.name : 'desconocido'
+                });
             }
         }
         
@@ -496,14 +608,26 @@
                 const index = state.inventory.findIndex(p => p.id === product.id);
                 if (index !== -1) {
                     state.inventory[index] = product;
+                    trackEvent('producto_editado', {
+                        producto_id: product.id,
+                        producto_nombre: product.name
+                    });
                 }
             } else {
                 // Nuevo
                 if (state.inventory.length >= 50) {
                     alert('Máximo 50 productos');
+                    trackEvent('limite_productos_alcanzado', {
+                        productos_actuales: state.inventory.length
+                    });
                     return;
                 }
                 state.inventory.push(product);
+                trackEvent('producto_agregado', {
+                    producto_id: product.id,
+                    producto_nombre: product.name,
+                    total_productos: state.inventory.length
+                });
             }
             
             saveInventory();
@@ -519,6 +643,7 @@
                 saveSales();
                 updateSummary();
                 renderSales();
+                trackEvent('nuevo_dia_iniciado');
             }
         }
         
@@ -526,6 +651,7 @@
         function exportarInventario() {
             if (state.inventory.length === 0) {
                 alert('No hay productos para exportar');
+                trackEvent('backup_sin_productos');
                 return;
             }
             
@@ -541,7 +667,11 @@
             // Intentar copiar al portapapeles
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(textoBackup).then(() => {
-                    alert('✅ Inventario copiado!\n\n${state.inventory.length} productos guardados de StoreFlow.\n\nPégalo en WhatsApp, Notas o cualquier app para guardarlo.');
+                    alert(`✅ Inventario copiado!\n\n${state.inventory.length} productos guardados de StoreFlow.\n\nPégalo en WhatsApp, Notas o cualquier app para guardarlo.`);
+                    trackEvent('backup_exportado_exitoso', {
+                        productos_count: state.inventory.length,
+                        metodo: 'clipboard'
+                    });
                 }).catch(() => {
                     // Fallback si falla el portapapeles
                     mostrarTextoParaCopiar(textoBackup);
@@ -563,8 +693,15 @@
             try {
                 document.execCommand('copy');
                 alert('✅ Inventario copiado! Pégalo en un lugar seguro.');
+                trackEvent('backup_exportado_exitoso', {
+                    productos_count: state.inventory.length,
+                    metodo: 'execCommand'
+                });
             } catch (err) {
                 prompt('Copia este texto manualmente:', texto);
+                trackEvent('backup_exportado_manual', {
+                    productos_count: state.inventory.length
+                });
             }
             
             document.body.removeChild(textarea);
@@ -573,7 +710,10 @@
         function mostrarImportDialog() {
             const textoBackup = prompt('Pega aquí el texto de tu inventario guardado:');
             
-            if (!textoBackup) return;
+            if (!textoBackup) {
+                trackEvent('backup_import_cancelado');
+                return;
+            }
             
             try {
                 const backup = JSON.parse(textoBackup);
@@ -590,15 +730,27 @@
                 );
                 
                 if (confirmacion) {
+                    const productosAntes = state.inventory.length;
                     state.inventory = backup.productos;
                     saveInventory();
                     renderInventory();
                     updateSaleProductList();
                     alert(`✅ ¡Inventario restaurado!\n\n${backup.productos.length} productos cargados.`);
+                    
+                    trackEvent('backup_importado_exitoso', {
+                        productos_antes: productosAntes,
+                        productos_despues: backup.productos.length,
+                        fecha_backup: backup.fecha
+                    });
+                } else {
+                    trackEvent('backup_import_cancelado_confirmacion');
                 }
                 
             } catch (error) {
                 alert('❌ Error: El texto no es válido.\n\nAsegúrate de copiar TODO el texto del backup.');
+                trackEvent('backup_import_error', {
+                    error_message: error.message
+                });
             }
         }
         
@@ -629,6 +781,14 @@
             // Crear URL de WhatsApp
             const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
             
+            // Trackear envío de feedback
+            trackEvent('feedback_whatsapp_enviado', {
+                dias_uso: diasUso,
+                productos_inventario: totalProductos,
+                ventas_hoy: ventasHoy,
+                total_ventas_hoy: totalVentasHoy.toFixed(2)
+            });
+            
             // Abrir WhatsApp
             window.open(url, '_blank');
         }
@@ -640,6 +800,7 @@
                 // Primera vez que usa la app
                 primerUso = new Date().toISOString();
                 localStorage.setItem('tiendita_primer_uso', primerUso);
+                trackEvent('primer_uso_registrado');
                 return 0;
             }
             
@@ -654,6 +815,11 @@
         
         // Función para capturar ventas del día
         function capturarVentas() {
+            // Trackear uso de captura
+            trackEvent('captura_ventas_iniciada', {
+                ventas_count: state.sales.length
+            });
+            
             // Crear un canvas temporal para la captura
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -672,7 +838,7 @@
             ctx.textAlign = 'center';
             
             // Título principal
-            ctx.fillText('Mi Tiendita', canvas.width / 2, 40);
+            ctx.fillText('StoreFlow', canvas.width / 2, 40);
             
             // Fecha
             const fecha = new Date().toLocaleDateString('es-MX', { 
@@ -756,13 +922,13 @@
             ctx.font = '12px Arial';
             ctx.fillStyle = '#9ca3af';
             ctx.textAlign = 'center';
-            ctx.fillText('Generado por Mi Tiendita', canvas.width / 2, canvas.height - 20);
+            ctx.fillText('Generado por StoreFlow', canvas.width / 2, canvas.height - 20);
             
             // Convertir canvas a imagen y descargar
             try {
                 // Crear enlace de descarga
                 const link = document.createElement('a');
-                link.download = `ventas_${new Date().toISOString().split('T')[0]}.png`;
+                link.download = `ventas_storeflow_${new Date().toISOString().split('T')[0]}.png`;
                 link.href = canvas.toDataURL('image/png');
                 
                 // Simular clic para descargar
@@ -772,12 +938,18 @@
                 
                 alert('📸 ¡Captura guardada!\n\nLa imagen se descargó en tu dispositivo.\nPuedes encontrarla en la carpeta de Descargas.');
                 
+                trackEvent('captura_ventas_exitosa', {
+                    ventas_count: state.sales.length,
+                    total_ventas: summary.totalSales.toFixed(2),
+                    metodo: 'descarga'
+                });
+                
             } catch (error) {
                 // Fallback: mostrar la imagen en una nueva ventana
                 const newWindow = window.open();
                 newWindow.document.write(`
                     <html>
-                        <head><title>Ventas del Día - Mi Tiendita</title></head>
+                        <head><title>Ventas del Día - StoreFlow</title></head>
                         <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6;">
                             <div style="text-align: center;">
                                 <img src="${canvas.toDataURL('image/png')}" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -787,8 +959,14 @@
                     </html>
                 `);
                 newWindow.document.close();
+                
+                trackEvent('captura_ventas_exitosa', {
+                    ventas_count: state.sales.length,
+                    total_ventas: summary.totalSales.toFixed(2),
+                    metodo: 'ventana_nueva'
+                });
             }
         }
     </script>
 </body>
-</html
+</html>
