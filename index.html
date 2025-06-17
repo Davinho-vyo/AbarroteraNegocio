@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Tiendita</title>
+    <title>StoreFlow</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; margin: 0; background: #f3f4f6; }
@@ -37,7 +37,7 @@
         <!-- Vista Principal -->
         <div id="mainView">
             <div class="card" style="text-align: center;">
-                <h1 style="font-size: 24px; margin: 0 0 8px 0;">¡Bienvenido Emprendedor!</h1>
+                <h1 style="font-size: 24px; margin: 0 0 8px 0;">🏪 StoreFlow</h1>
                 <p style="color: #6b7280; margin: 0;">Que tengas un excelente día de ventas, no te rindas</p>
             </div>
             
@@ -541,7 +541,7 @@
             // Intentar copiar al portapapeles
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(textoBackup).then(() => {
-                    alert(`✅ Inventario copiado!\n\n${state.inventory.length} productos guardados.\n\nPégalo en WhatsApp, Notas o cualquier app para guardarlo.`);
+                    alert('✅ Inventario copiado!\n\n${state.inventory.length} productos guardados de StoreFlow.\n\nPégalo en WhatsApp, Notas o cualquier app para guardarlo.');
                 }).catch(() => {
                     // Fallback si falla el portapapeles
                     mostrarTextoParaCopiar(textoBackup);
