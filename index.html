@@ -222,24 +222,24 @@
         
         .modal-btn-secondary:hover { background: #d1d5db; }
 
-        /* Sistema de apoyo */
+        /* Sistema de apoyo - versión compacta y permanente */
         .support-banner {
             background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
             color: white;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin: 16px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 12px 0;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.1);
             cursor: pointer;
             transition: all 0.3s ease;
             display: none;
         }
 
         .support-banner:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
 
         .support-content {
@@ -247,11 +247,11 @@
             z-index: 2;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .support-icon {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
         }
 
         .support-text {
@@ -259,23 +259,23 @@
         }
 
         .support-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .support-subtitle {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 11px;
+            opacity: 0.85;
         }
 
         .support-cta {
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.3);
             color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
             font-weight: bold;
             text-decoration: none;
         }
@@ -484,13 +484,13 @@
                 💬 Enviar Comentarios por WhatsApp
             </button>
             
-            <!-- Banner de apoyo -->
+            <!-- Banner de apoyo compacto y permanente -->
             <div id="supportBanner" class="support-banner" onclick="showSupportModal()">
                 <div class="support-content">
                     <div class="support-icon">💝</div>
                     <div class="support-text">
                         <div class="support-title">¿Te gusta StoreFlow? ¡Apóyanos!</div>
-                        <div class="support-subtitle">Opcional • La versión actual seguirá siendo gratis</div>
+                        <div class="support-subtitle">Opcional • Siempre gratis</div>
                     </div>
                     <div class="support-cta">Ver cómo</div>
                 </div>
@@ -740,42 +740,34 @@
                 total_productos: state.inventory.length
             });
             
-            setTimeout(() => {
-                const banner = document.getElementById('supportBanner');
-                if (banner) {
-                    banner.style.display = 'none';
-                    localStorage.setItem('support_banner_dismissed', 'true');
-                    supportBannerDismissed = true;
-                    
-                    trackEvent('support_banner_dismissed', {
-                        action_taken: action
-                    });
-                }
-                closeSupportModal();
-            }, 500);
+            // El banner nunca desaparece, solo mostramos diferentes mensajes
+            if (action === 'whatsapp_from_app') {
+                setTimeout(() => {
+                    showNotification('success', '💝 ¡Gracias por contactarnos!', 
+                        'Te responderemos por WhatsApp lo más pronto posible. El banner permanece disponible.');
+                }, 1000);
+            } else if (action === 'mercado_libre_from_app') {
+                setTimeout(() => {
+                    showNotification('success', '🛒 ¡Gracias por tu interés!', 
+                        'Puedes volver a consultar la lona cuando gustes desde el banner.');
+                }, 1000);
+            }
             
-            setTimeout(() => {
-                showNotification('success', '💝 ¡Gracias por tu apoyo!', 
-                    'Tu apoyo nos ayuda a mantener StoreFlow gratis para todos');
-            }, 1000);
+            // Solo cerrar el modal
+            closeSupportModal();
         }
 
         function manageSupportBanner() {
             const banner = document.getElementById('supportBanner');
             if (!banner) return;
             
-            const dismissed = localStorage.getItem('support_banner_dismissed');
-            if (dismissed) {
-                banner.style.display = 'none';
-                supportBannerDismissed = true;
-                return;
-            }
-            
+            // El banner nunca se oculta por completo, solo verificamos si debe mostrarse
             const diasUso = calcularDiasUso();
             const ventasRegistradas = state.sales.length;
             const productosEnInventario = state.inventory.length;
             
-            const shouldShow = (diasUso >= 3) || (ventasRegistradas >= 5) || (productosEnInventario >= 10);
+            // Mostrar desde el primer día para que sea permanente
+            const shouldShow = (diasUso >= 1) || (ventasRegistradas >= 1) || (productosEnInventario >= 5);
             
             if (shouldShow) {
                 banner.style.display = 'block';
@@ -788,11 +780,9 @@
                         dias_uso: diasUso,
                         ventas_registradas: ventasRegistradas,
                         productos_inventario: productosEnInventario,
-                        trigger: diasUso >= 3 ? 'dias_uso' : (ventasRegistradas >= 5 ? 'ventas' : 'productos')
+                        tipo: 'banner_permanente'
                     });
                 }
-            } else {
-                banner.style.display = 'none';
             }
         }
 
@@ -805,11 +795,12 @@
             const totalVentas = state.sales.length;
             const totalProductos = state.inventory.length;
             
+            // Solo mostrar notificaciones especiales, no el banner adicional
+            // El banner principal ya está gestionado por manageSupportBanner()
             if (totalVentas === 10) {
-                banner.style.display = 'block';
                 setTimeout(() => {
                     showNotification('success', '🎉 ¡10 ventas registradas!', 
-                        'Estás dominando StoreFlow. Si quieres apoyar el proyecto, revisa la opción de abajo.');
+                        'Estás dominando StoreFlow. El banner de apoyo está siempre disponible si quieres colaborar.');
                 }, 1500);
                 
                 trackEvent('milestone_support_shown', {
@@ -819,10 +810,9 @@
             }
             
             if (totalProductos === 20) {
-                banner.style.display = 'block';
                 setTimeout(() => {
                     showNotification('success', '📦 ¡20 productos en inventario!', 
-                        'Tu negocio está creciendo. Considera una lona profesional para darle más visibilidad.');
+                        'Tu negocio está creciendo. Revisa el banner de apoyo para una lona profesional.');
                 }, 1500);
                 
                 trackEvent('milestone_support_shown', {
@@ -831,6 +821,8 @@
                 });
             }
         }
+
+
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
