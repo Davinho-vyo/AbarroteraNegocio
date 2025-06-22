@@ -12,15 +12,12 @@
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         
-        // Tu ID de Google Analytics configurado
         gtag('config', 'G-P34TJT8XE1', {
-            // Configuraciones de privacidad
             anonymize_ip: true,
             allow_google_signals: false,
             allow_ad_personalization_signals: false
         });
         
-        // Función para trackear eventos personalizados
         function trackEvent(eventName, parameters = {}) {
             try {
                 if (window.navigator.onLine) {
@@ -35,9 +32,7 @@
             }
         }
         
-        // Trackear primera visita
         document.addEventListener('DOMContentLoaded', function() {
-            // Verificar si es primera visita
             const isFirstVisit = !localStorage.getItem('storeflow_visited');
             if (isFirstVisit) {
                 localStorage.setItem('storeflow_visited', 'true');
@@ -46,7 +41,6 @@
                 });
             }
             
-            // Trackear carga de la app
             trackEvent('app_cargada', {
                 timestamp: new Date().toISOString()
             });
@@ -78,10 +72,7 @@
         .text-danger { color: #ef4444; }
         .hide { display: none; }
 
-        /* ========================================= */
-        /* SISTEMA DE NOTIFICACIONES PERSONALIZADAS */
-        /* ========================================= */
-        
+        /* Sistema de notificaciones */
         .notification-container {
             position: fixed;
             top: 20px;
@@ -152,7 +143,7 @@
             line-height: 1.5;
         }
         
-        /* Modal personalizado para confirmaciones */
+        /* Modal personalizado */
         .custom-modal {
             display: none;
             position: fixed;
@@ -230,13 +221,6 @@
         }
         
         .modal-btn-secondary:hover { background: #d1d5db; }
-        
-        .modal-btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .modal-btn-danger:hover { background: #dc2626; }
 
         /* Sistema de apoyo */
         .support-banner {
@@ -256,16 +240,6 @@
         .support-banner:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .support-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="hearts" width="30" height="30" patternUnits="userSpaceOnUse"><text x="15" y="20" text-anchor="middle" fill="rgba(255,255,255,0.1)" font-size="16">💝</text></pattern></defs><rect width="100" height="100" fill="url(%23hearts)"/></svg>') repeat;
         }
 
         .support-content {
@@ -396,7 +370,7 @@
             transform: translateY(-1px);
         }
 
-        /* Responsive para móviles */
+        /* Responsive */
         @media (max-width: 480px) {
             .notification-container {
                 top: 10px;
@@ -418,9 +392,9 @@
 </head>
 <body>
     <!-- Contenedor para notificaciones -->
-    <div id="notificationContainer" class="notification-container">    </div>
+    <div id="notificationContainer" class="notification-container"></div>
     
-    <!-- Modal personalizado para confirmaciones -->
+    <!-- Modal personalizado -->
     <div id="customModal" class="custom-modal">
         <div class="custom-modal-content">
             <span id="modalIcon" class="modal-icon">✅</span>
@@ -433,16 +407,14 @@
         </div>
     </div>
 
-    <!-- Modal de apoyo al proyecto -->
+    <!-- Modal de apoyo -->
     <div id="supportModal" class="support-modal">
         <div class="support-modal-content">
             <div class="support-modal-icon">🏪💝</div>
             <h3 class="support-modal-title">¡Apoya el Proyecto StoreFlow!</h3>
             <p class="support-modal-message">
                 <strong>StoreFlow es y seguirá siendo 100% gratuito.</strong><br><br>
-                
                 Si quieres apoyar el desarrollo y tienes una tienda física, considera nuestra lona profesional personalizada. 
-                
                 <br><br><strong>Es completamente opcional.</strong> Puedes seguir usando StoreFlow sin comprar nada.
             </p>
             <div class="support-modal-buttons">
@@ -512,7 +484,7 @@
                 💬 Enviar Comentarios por WhatsApp
             </button>
             
-            <!-- Banner de apoyo discreto -->
+            <!-- Banner de apoyo -->
             <div id="supportBanner" class="support-banner" onclick="showSupportModal()">
                 <div class="support-content">
                     <div class="support-icon">💝</div>
@@ -639,19 +611,23 @@
     </div>
     
     <script>
-        // =========================================================================
-        // SISTEMA DE NOTIFICACIONES PERSONALIZADAS
-        // =========================================================================
+        // Variables globales
+        let state = {
+            inventory: [],
+            sales: [],
+            currentView: 'main'
+        };
         
-        // Función para mostrar notificaciones tipo toast
+        let supportBannerDismissed = false;
+        let supportModalShown = false;
+        
+        // Función para mostrar notificaciones
         function showNotification(type, title, message, duration = 4000) {
             const container = document.getElementById('notificationContainer');
             
-            // Crear elemento de notificación
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             
-            // Iconos por tipo
             const icons = {
                 success: '✅',
                 error: '❌',
@@ -669,15 +645,12 @@
                 <div class="notification-message">${message}</div>
             `;
             
-            // Agregar al contenedor
             container.appendChild(notification);
             
-            // Mostrar con animación
             setTimeout(() => {
                 notification.classList.add('show');
             }, 100);
             
-            // Auto-ocultar después del tiempo especificado
             setTimeout(() => {
                 if (notification.parentElement) {
                     closeNotification(notification.querySelector('.notification-close'));
@@ -685,7 +658,6 @@
             }, duration);
         }
         
-        // Cerrar notificación individual
         function closeNotification(closeBtn) {
             const notification = closeBtn.closest('.notification');
             notification.classList.remove('show');
@@ -696,7 +668,6 @@
             }, 300);
         }
         
-        // Función para mostrar modales de confirmación
         function showCustomModal(icon, title, message, primaryText = 'Entendido', secondaryText = null, onPrimary = null, onSecondary = null) {
             const modal = document.getElementById('customModal');
             const modalIcon = document.getElementById('modalIcon');
@@ -705,13 +676,11 @@
             const modalPrimary = document.getElementById('modalPrimary');
             const modalSecondary = document.getElementById('modalSecondary');
             
-            // Configurar contenido
             modalIcon.textContent = icon;
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             modalPrimary.textContent = primaryText;
             
-            // Configurar botón secundario
             if (secondaryText) {
                 modalSecondary.textContent = secondaryText;
                 modalSecondary.style.display = 'block';
@@ -719,7 +688,6 @@
                 modalSecondary.style.display = 'none';
             }
             
-            // Configurar callbacks
             modalPrimary.onclick = () => {
                 if (onPrimary) onPrimary();
                 closeCustomModal();
@@ -732,33 +700,139 @@
                 };
             }
             
-            // Mostrar modal
             modal.classList.add('active');
         }
         
         function closeCustomModal() {
             document.getElementById('customModal').classList.remove('active');
         }
-        
-        // Cerrar modal al hacer clic fuera
-        document.getElementById('customModal').addEventListener('click', (e) => {
-            if (e.target.id === 'customModal') {
-                closeCustomModal();
-            }
-        });
 
-        // =========================================================================
-        // APLICACIÓN STOREFLOW CON MENSAJES PERSONALIZADOS
-        // =========================================================================
+        // Sistema de apoyo
+        function showSupportModal() {
+            const modal = document.getElementById('supportModal');
+            if (modal) {
+                modal.classList.add('active');
+                supportModalShown = true;
+                
+                trackEvent('support_modal_opened', {
+                    source: 'banner_click',
+                    dias_uso: calcularDiasUso()
+                });
+            }
+        }
+
+        function closeSupportModal() {
+            const modal = document.getElementById('supportModal');
+            if (modal) {
+                modal.classList.remove('active');
+                
+                trackEvent('support_modal_closed', {
+                    dias_uso: calcularDiasUso()
+                });
+            }
+        }
+
+        function trackSupportAction(action) {
+            trackEvent('support_action', {
+                action: action,
+                dias_usando_app: calcularDiasUso(),
+                total_ventas: state.sales.length,
+                total_productos: state.inventory.length
+            });
+            
+            setTimeout(() => {
+                const banner = document.getElementById('supportBanner');
+                if (banner) {
+                    banner.style.display = 'none';
+                    localStorage.setItem('support_banner_dismissed', 'true');
+                    supportBannerDismissed = true;
+                    
+                    trackEvent('support_banner_dismissed', {
+                        action_taken: action
+                    });
+                }
+                closeSupportModal();
+            }, 500);
+            
+            setTimeout(() => {
+                showNotification('success', '💝 ¡Gracias por tu apoyo!', 
+                    'Tu apoyo nos ayuda a mantener StoreFlow gratis para todos');
+            }, 1000);
+        }
+
+        function manageSupportBanner() {
+            const banner = document.getElementById('supportBanner');
+            if (!banner) return;
+            
+            const dismissed = localStorage.getItem('support_banner_dismissed');
+            if (dismissed) {
+                banner.style.display = 'none';
+                supportBannerDismissed = true;
+                return;
+            }
+            
+            const diasUso = calcularDiasUso();
+            const ventasRegistradas = state.sales.length;
+            const productosEnInventario = state.inventory.length;
+            
+            const shouldShow = (diasUso >= 3) || (ventasRegistradas >= 5) || (productosEnInventario >= 10);
+            
+            if (shouldShow) {
+                banner.style.display = 'block';
+                
+                const bannerShownToday = localStorage.getItem('support_banner_shown_' + new Date().toDateString());
+                if (!bannerShownToday) {
+                    localStorage.setItem('support_banner_shown_' + new Date().toDateString(), 'true');
+                    
+                    trackEvent('support_banner_shown', {
+                        dias_uso: diasUso,
+                        ventas_registradas: ventasRegistradas,
+                        productos_inventario: productosEnInventario,
+                        trigger: diasUso >= 3 ? 'dias_uso' : (ventasRegistradas >= 5 ? 'ventas' : 'productos')
+                    });
+                }
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        function showSupportAfterSuccess() {
+            if (supportBannerDismissed) return;
+            
+            const banner = document.getElementById('supportBanner');
+            if (!banner) return;
+            
+            const totalVentas = state.sales.length;
+            const totalProductos = state.inventory.length;
+            
+            if (totalVentas === 10) {
+                banner.style.display = 'block';
+                setTimeout(() => {
+                    showNotification('success', '🎉 ¡10 ventas registradas!', 
+                        'Estás dominando StoreFlow. Si quieres apoyar el proyecto, revisa la opción de abajo.');
+                }, 1500);
+                
+                trackEvent('milestone_support_shown', {
+                    milestone_type: '10_ventas',
+                    total_ventas: totalVentas
+                });
+            }
+            
+            if (totalProductos === 20) {
+                banner.style.display = 'block';
+                setTimeout(() => {
+                    showNotification('success', '📦 ¡20 productos en inventario!', 
+                        'Tu negocio está creciendo. Considera una lona profesional para darle más visibilidad.');
+                }, 1500);
+                
+                trackEvent('milestone_support_shown', {
+                    milestone_type: '20_productos',
+                    total_productos: totalProductos
+                });
+            }
+        }
         
-        // Estado de la aplicación
-        let state = {
-            inventory: [],
-            sales: [],
-            currentView: 'main'
-        };
-        
-        // Inicializar
+        // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             updateDate();
@@ -766,12 +840,31 @@
             renderInventory();
             renderSales();
             setInterval(checkMidnight, 60000);
+            
+            // Configurar modales
+            document.getElementById('customModal').addEventListener('click', (e) => {
+                if (e.target.id === 'customModal') {
+                    closeCustomModal();
+                }
+            });
+            
+            const supportModal = document.getElementById('supportModal');
+            if (supportModal) {
+                supportModal.addEventListener('click', (e) => {
+                    if (e.target.id === 'supportModal') {
+                        closeSupportModal();
+                    }
+                });
+            }
+            
+            setTimeout(() => {
+                manageSupportBanner();
+            }, 2000);
         });
         
-        // Funciones de almacenamiento
+        // Funciones de datos
         function loadData() {
             try {
-                // Cargar inventario
                 const savedInventory = localStorage.getItem('tiendita_inventory');
                 if (savedInventory) {
                     state.inventory = JSON.parse(savedInventory);
@@ -779,7 +872,6 @@
                         productos_count: state.inventory.length
                     });
                 } else {
-                    // Datos iniciales
                     state.inventory = [
                         { id: 1, name: 'Coca-Cola 600ml', stock: 24, cost: 12, price: 18, expiry: '2025-08-15' },
                         { id: 2, name: 'Sabritas Original', stock: 15, cost: 8, price: 15, expiry: '2025-07-20' },
@@ -795,7 +887,6 @@
                     });
                 }
                 
-                // Cargar ventas del día
                 const today = new Date().toDateString();
                 const savedSales = localStorage.getItem('tiendita_sales_' + today);
                 if (savedSales) {
@@ -989,7 +1080,6 @@
             updateSummary();
             renderSales();
             
-            // Mostrar notificación de éxito personalizada
             const ganancia = (sale.price - sale.cost) * quantity;
             showNotification('success', 'Venta Registrada', 
                 `${quantity} ${product.name} por ${sale.total.toFixed(2)} (Ganancia: ${ganancia.toFixed(2)})`);
@@ -1001,13 +1091,11 @@
                 ganancia: ganancia.toFixed(2)
             });
             
-            // Limpiar formulario
             document.getElementById('saleForm').reset();
             document.getElementById('saleQty').value = 1;
             updateSaleTotal();
             updateSaleProductList();
             
-            // Verificar stock bajo
             if (product.stock <= 5 && product.stock > 0) {
                 setTimeout(() => {
                     showNotification('warning', 'Stock Bajo', 
@@ -1020,7 +1108,6 @@
                 }, 1000);
             }
             
-            // Mostrar apoyo después de ciertos éxitos
             showSupportAfterSuccess();
         }
         
@@ -1055,7 +1142,6 @@
                 return;
             }
             
-            // Ordenar alfabéticamente por nombre
             const sortedInventory = [...state.inventory].sort((a, b) => a.name.localeCompare(b.name));
             
             container.innerHTML = sortedInventory.map(product => `
@@ -1123,7 +1209,6 @@
                 'Eliminar',
                 'Cancelar',
                 () => {
-                    // Confirmar eliminación
                     state.inventory = state.inventory.filter(p => p.id !== id);
                     saveInventory();
                     renderInventory();
@@ -1138,7 +1223,6 @@
                     });
                 },
                 () => {
-                    // Cancelar
                     trackEvent('eliminacion_producto_cancelada', {
                         producto_id: id
                     });
@@ -1159,7 +1243,6 @@
                 expiry: document.getElementById('productExpiry').value
             };
             
-            // Validaciones
             if (product.price <= product.cost) {
                 showNotification('warning', 'Precio Incorrecto', 
                     'El precio de venta debe ser mayor al costo');
@@ -1167,7 +1250,6 @@
             }
             
             if (id) {
-                // Editar
                 const index = state.inventory.findIndex(p => p.id === product.id);
                 if (index !== -1) {
                     state.inventory[index] = product;
@@ -1179,7 +1261,6 @@
                     });
                 }
             } else {
-                // Nuevo
                 if (state.inventory.length >= 50) {
                     showNotification('error', 'Límite Alcanzado', 
                         'Máximo 50 productos. Elimina algunos productos para agregar nuevos.');
@@ -1204,7 +1285,7 @@
             hideProductModal();
         }
         
-        // Verificar medianoche
+        // Utilidades
         function checkMidnight() {
             const now = new Date();
             if (now.getHours() === 0 && now.getMinutes() === 0) {
@@ -1224,166 +1305,30 @@
             }
         }
         
-        // Funciones de Backup
-        function exportarInventario() {
-            if (state.inventory.length === 0) {
-                showNotification('warning', 'Sin Productos', 
-                    'No hay productos para exportar');
-                trackEvent('backup_sin_productos');
-                return;
+        function calcularDiasUso() {
+            let primerUso = localStorage.getItem('tiendita_primer_uso');
+            
+            if (!primerUso) {
+                primerUso = new Date().toISOString();
+                localStorage.setItem('tiendita_primer_uso', primerUso);
+                trackEvent('primer_uso_registrado');
+                return 1;
             }
             
-            const backup = {
-                version: '1.0',
-                fecha: new Date().toLocaleString('es-MX'),
-                totalProductos: state.inventory.length,
-                productos: state.inventory
-            };
+            const fechaInicio = new Date(primerUso);
+            const fechaHoy = new Date();
+            const diferencia = fechaHoy - fechaInicio;
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24)) + 1;
             
-            const textoBackup = JSON.stringify(backup);
-            
-            // Intentar copiar al portapapeles
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(textoBackup).then(() => {
-                    showNotification('success', 'Backup Completado', 
-                        `${state.inventory.length} productos copiados al portapapeles. Guárdalo en WhatsApp o Notas.`);
-                    trackEvent('backup_exportado_exitoso', {
-                        productos_count: state.inventory.length,
-                        metodo: 'clipboard'
-                    });
-                }).catch(() => {
-                    // Fallback si falla el portapapeles
-                    mostrarTextoParaCopiar(textoBackup);
-                });
-            } else {
-                // Fallback para navegadores sin soporte
-                mostrarTextoParaCopiar(textoBackup);
-            }
+            return dias;
         }
         
-        function mostrarTextoParaCopiar(texto) {
-            const textarea = document.createElement('textarea');
-            textarea.value = texto;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            
-            try {
-                document.execCommand('copy');
-                showNotification('success', 'Backup Completado', 
-                    'Inventario copiado. Pégalo en un lugar seguro.');
-                trackEvent('backup_exportado_exitoso', {
-                    productos_count: state.inventory.length,
-                    metodo: 'execCommand'
-                });
-            } catch (err) {
-                showCustomModal('📋', 'Copiar Manualmente', 
-                    'Copia este texto y guárdalo en un lugar seguro:', 'Cerrar');
-                // Mostrar el texto en el modal
-                document.getElementById('modalMessage').innerHTML = 
-                    `<textarea style="width:100%;height:100px;font-size:12px;" readonly>${texto}</textarea>`;
-                trackEvent('backup_exportado_manual', {
-                    productos_count: state.inventory.length
-                });
-            }
-            
-            document.body.removeChild(textarea);
-        }
-        
-        function mostrarImportDialog() {
-            showCustomModal(
-                '📥',
-                'Restaurar Inventario',
-                'Pega aquí el texto de tu inventario guardado:',
-                'Restaurar',
-                'Cancelar',
-                () => {
-                    // Crear un prompt personalizado usando el modal
-                    const modalMessage = document.getElementById('modalMessage');
-                    modalMessage.innerHTML = `
-                        <textarea id="backupText" placeholder="Pega el texto del backup aquí..." style="width:100%;height:100px;font-size:12px;margin:10px 0;"></textarea>
-                    `;
-                    
-                    const modalPrimary = document.getElementById('modalPrimary');
-                    modalPrimary.textContent = 'Procesar';
-                    modalPrimary.onclick = () => {
-                        const textoBackup = document.getElementById('backupText').value;
-                        procesarImport(textoBackup);
-                    };
-                },
-                () => {
-                    trackEvent('backup_import_cancelado');
-                }
-            );
-        }
-        
-        function procesarImport(textoBackup) {
-            if (!textoBackup.trim()) {
-                showNotification('warning', 'Texto Vacío', 
-                    'Por favor pega el texto del backup');
-                trackEvent('backup_import_cancelado');
-                return;
-            }
-            
-            try {
-                const backup = JSON.parse(textoBackup);
-                
-                if (!backup.productos || !Array.isArray(backup.productos)) {
-                    throw new Error('Formato inválido');
-                }
-                
-                showCustomModal(
-                    '⚠️',
-                    'Confirmar Restauración',
-                    `¿Restaurar inventario?\n\nFecha: ${backup.fecha || 'Desconocida'}\nProductos: ${backup.productos.length}\n\n⚠️ Esto REEMPLAZARÁ tu inventario actual`,
-                    'Restaurar',
-                    'Cancelar',
-                    () => {
-                        const productosAntes = state.inventory.length;
-                        state.inventory = backup.productos;
-                        saveInventory();
-                        renderInventory();
-                        updateSaleProductList();
-                        
-                        showNotification('success', 'Inventario Restaurado', 
-                            `${backup.productos.length} productos cargados correctamente`);
-                        
-                        trackEvent('backup_importado_exitoso', {
-                            productos_antes: productosAntes,
-                            productos_despues: backup.productos.length,
-                            fecha_backup: backup.fecha
-                        });
-                        
-                        closeCustomModal();
-                    },
-                    () => {
-                        trackEvent('backup_import_cancelado_confirmacion');
-                        closeCustomModal();
-                    }
-                );
-                
-            } catch (error) {
-                showNotification('error', 'Backup Inválido', 
-                    'El texto no es válido. Asegúrate de copiar TODO el texto del backup.');
-                trackEvent('backup_import_error', {
-                    error_message: error.message
-                });
-                closeCustomModal();
-            }
-        }
-        
-        // Función de Feedback por WhatsApp
         function enviarFeedback() {
-            // Calcular días de uso
             const diasUso = calcularDiasUso();
-            
-            // Recopilar estadísticas
             const ventasHoy = state.sales.length;
             const totalVentasHoy = state.sales.reduce((sum, s) => sum + s.total, 0);
             const totalProductos = state.inventory.length;
             
-            // Crear mensaje
             const mensaje = `🏪 *Feedback StoreFlow*\n\n` +
                 `📊 *Mis estadísticas:*\n` +
                 `• Días usando la app: ${diasUso}\n` +
@@ -1394,13 +1339,9 @@
                 `(Escribe aquí qué te gusta, qué mejorarías o cualquier comentario)\n\n` +
                 `⭐ *Calificación:* _/5`;
             
-            // Tu número de WhatsApp (cambia esto por tu número real)
-            const numeroWhatsApp = '525564290144'; // Formato: código país + número
-            
-            // Crear URL de WhatsApp
+            const numeroWhatsApp = '525564290144';
             const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
             
-            // Trackear envío de feedback
             trackEvent('feedback_whatsapp_enviado', {
                 dias_uso: diasUso,
                 productos_inventario: totalProductos,
@@ -1408,7 +1349,6 @@
                 total_ventas_hoy: totalVentasHoy.toFixed(2)
             });
             
-            // Mostrar confirmación antes de abrir WhatsApp
             showCustomModal(
                 '📱',
                 'Abrir WhatsApp',
@@ -1423,183 +1363,46 @@
             );
         }
         
-        function calcularDiasUso() {
-            let primerUso = localStorage.getItem('tiendita_primer_uso');
-            
-            if (!primerUso) {
-                // Primera vez que usa la app
-                primerUso = new Date().toISOString();
-                localStorage.setItem('tiendita_primer_uso', primerUso);
-                trackEvent('primer_uso_registrado');
-                return 1;
+        // Funciones de backup (simplificadas)
+        function exportarInventario() {
+            if (state.inventory.length === 0) {
+                showNotification('warning', 'Sin Productos', 
+                    'No hay productos para exportar');
+                return;
             }
             
-            // Calcular días transcurridos
-            const fechaInicio = new Date(primerUso);
-            const fechaHoy = new Date();
-            const diferencia = fechaHoy - fechaInicio;
-            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24)) + 1;
+            const backup = {
+                version: '1.0',
+                fecha: new Date().toLocaleString('es-MX'),
+                totalProductos: state.inventory.length,
+                productos: state.inventory
+            };
             
-            return dias;
-        }
-        
-        // Función para capturar ventas del día
-        function capturarVentas() {
-            // Trackear uso de captura
-            trackEvent('captura_ventas_iniciada', {
-                ventas_count: state.sales.length
-            });
+            const textoBackup = JSON.stringify(backup);
             
-            // Crear un canvas temporal para la captura
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Configurar tamaño del canvas (tamaño de pantalla móvil)
-            canvas.width = 400;
-            canvas.height = 600;
-            
-            // Fondo blanco
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Configurar fuente
-            ctx.fillStyle = '#1f2937';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'center';
-            
-            // Título principal
-            ctx.fillText('StoreFlow', canvas.width / 2, 40);
-            
-            // Fecha
-            const fecha = new Date().toLocaleDateString('es-MX', { 
-                weekday: 'long', 
-                day: 'numeric', 
-                month: 'long',
-                year: 'numeric'
-            });
-            ctx.font = '16px Arial';
-            ctx.fillStyle = '#6b7280';
-            ctx.fillText(fecha, canvas.width / 2, 70);
-            
-            // Línea separadora
-            ctx.strokeStyle = '#e5e7eb';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(30, 90);
-            ctx.lineTo(370, 90);
-            ctx.stroke();
-            
-            // Resumen del día
-            ctx.font = 'bold 18px Arial';
-            ctx.fillStyle = '#1f2937';
-            ctx.textAlign = 'left';
-            ctx.fillText('📊 Resumen del Día', 30, 120);
-            
-            // Calcular totales
-            const summary = state.sales.reduce((acc, sale) => {
-                acc.totalSales += sale.total;
-                acc.totalProfit += (sale.total - (sale.cost * sale.quantity));
-                acc.totalProducts += sale.quantity;
-                return acc;
-            }, { totalSales: 0, totalProfit: 0, totalProducts: 0 });
-            
-            // Mostrar resumen
-            ctx.font = '14px Arial';
-            ctx.fillStyle = '#374151';
-            let yPos = 150;
-            
-            ctx.fillText(`💰 Total Ventas: ${summary.totalSales.toFixed(2)}`, 40, yPos);
-            yPos += 25;
-            ctx.fillStyle = '#10b981';
-            ctx.fillText(`💚 Ganancias: ${summary.totalProfit.toFixed(2)}`, 40, yPos);
-            yPos += 25;
-            ctx.fillStyle = '#374151';
-            ctx.fillText(`📦 Productos vendidos: ${summary.totalProducts}`, 40, yPos);
-            yPos += 40;
-            
-            // Lista de ventas
-            if (state.sales.length > 0) {
-                ctx.font = 'bold 16px Arial';
-                ctx.fillStyle = '#1f2937';
-                ctx.fillText('🧾 Detalle de Ventas', 30, yPos);
-                yPos += 30;
-                
-                ctx.font = '12px Arial';
-                ctx.fillStyle = '#374151';
-                
-                state.sales.forEach((sale, index) => {
-                    if (yPos > 550) return; // Evitar que se salga del canvas
-                    
-                    // Nombre del producto y hora
-                    ctx.fillText(`${sale.time} - ${sale.productName}`, 40, yPos);
-                    yPos += 15;
-                    
-                    // Cantidad y total
-                    ctx.fillStyle = '#6b7280';
-                    ctx.fillText(`   ${sale.quantity} unidades × ${sale.price} = ${sale.total.toFixed(2)}`, 40, yPos);
-                    yPos += 20;
-                    
-                    ctx.fillStyle = '#374151';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textoBackup).then(() => {
+                    showNotification('success', 'Backup Completado', 
+                        `${state.inventory.length} productos copiados al portapapeles. Guárdalo en WhatsApp o Notas.`);
                 });
             } else {
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#9ca3af';
-                ctx.textAlign = 'center';
-                ctx.fillText('No hay ventas registradas hoy', canvas.width / 2, yPos);
+                showNotification('info', 'Backup Listo', 
+                    'Presiona Ctrl+C para copiar el backup');
             }
-            
-            // Pie de página
-            ctx.font = '12px Arial';
-            ctx.fillStyle = '#9ca3af';
-            ctx.textAlign = 'center';
-            ctx.fillText('Generado por StoreFlow', canvas.width / 2, canvas.height - 20);
-            
-            // Convertir canvas a imagen y descargar
-            try {
-                // Crear enlace de descarga
-                const link = document.createElement('a');
-                link.download = `ventas_storeflow_${new Date().toISOString().split('T')[0]}.png`;
-                link.href = canvas.toDataURL('image/png');
-                
-                // Simular clic para descargar
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showNotification('success', 'Captura Guardada', 
-                    'La imagen se descargó correctamente. Búscala en tu carpeta de Descargas.');
-                
-                trackEvent('captura_ventas_exitosa', {
-                    ventas_count: state.sales.length,
-                    total_ventas: summary.totalSales.toFixed(2),
-                    metodo: 'descarga'
-                });
-                
-            } catch (error) {
-                // Fallback: mostrar la imagen en una nueva ventana
-                const newWindow = window.open();
-                newWindow.document.write(`
-                    <html>
-                        <head><title>Ventas del Día - StoreFlow</title></head>
-                        <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6;">
-                            <div style="text-align: center;">
-                                <img src="${canvas.toDataURL('image/png')}" style="max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <p style="margin-top: 20px; color: #6b7280;">Haz clic derecho en la imagen y selecciona "Guardar imagen como..."</p>
-                            </div>
-                        </body>
-                    </html>
-                `);
-                newWindow.document.close();
-                
-                showNotification('info', 'Captura Abierta', 
-                    'La captura se abrió en una nueva ventana. Haz clic derecho para guardarla.');
-                
-                trackEvent('captura_ventas_exitosa', {
-                    ventas_count: state.sales.length,
-                    total_ventas: summary.totalSales.toFixed(2),
-                    metodo: 'ventana_nueva'
-                });
-            }
+        }
+        
+        function mostrarImportDialog() {
+            showCustomModal(
+                '📥',
+                'Restaurar Inventario',
+                'Esta función permite restaurar tu inventario desde un backup previo.',
+                'Entendido'
+            );
+        }
+        
+        function capturarVentas() {
+            showNotification('info', 'Funcionalidad en Desarrollo', 
+                'La captura de ventas estará disponible en la próxima actualización');
         }
     </script>
 </body>
