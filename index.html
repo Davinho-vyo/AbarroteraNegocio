@@ -22,11 +22,17 @@
         
         // Función para trackear eventos personalizados
         function trackEvent(eventName, parameters = {}) {
-            gtag('event', eventName, {
-                event_category: 'storeflow_action',
-                event_label: eventName,
-                ...parameters
-            });
+            try {
+                if (window.navigator.onLine) {
+                    gtag('event', eventName, {
+                        event_category: 'storeflow_action',
+                        event_label: eventName,
+                        ...parameters
+                    });
+                }
+            } catch (e) {
+                console.log('Analytics offline:', eventName);
+            }
         }
         
         // Trackear primera visita
@@ -71,9 +77,204 @@
         .text-success { color: #10b981; }
         .text-danger { color: #ef4444; }
         .hide { display: none; }
+
+        /* ========================================= */
+        /* SISTEMA DE NOTIFICACIONES PERSONALIZADAS */
+        /* ========================================= */
+        
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .notification {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border-left: 4px solid #10b981;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            max-width: 350px;
+            min-width: 280px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .notification.success { border-left-color: #10b981; }
+        .notification.error { border-left-color: #ef4444; }
+        .notification.warning { border-left-color: #f59e0b; }
+        .notification.info { border-left-color: #3b82f6; }
+        
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .notification-title {
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-close:hover { color: #374151; }
+        
+        .notification-message {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        /* Modal personalizado para confirmaciones */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .custom-modal.active { display: flex; }
+        
+        .custom-modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: transform 0.2s ease;
+        }
+        
+        .custom-modal.active .custom-modal-content { transform: scale(1); }
+        
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+        
+        .modal-message {
+            color: #6b7280;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-btn-primary {
+            background: #10b981;
+            color: white;
+        }
+        
+        .modal-btn-primary:hover { background: #059669; }
+        
+        .modal-btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .modal-btn-secondary:hover { background: #d1d5db; }
+        
+        .modal-btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .modal-btn-danger:hover { background: #dc2626; }
+
+        /* Responsive para móviles */
+        @media (max-width: 480px) {
+            .notification-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+            
+            .notification {
+                transform: translateY(-100px);
+                min-width: auto;
+                max-width: none;
+            }
+            
+            .notification.show {
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Contenedor para notificaciones -->
+    <div id="notificationContainer" class="notification-container"></div>
+    
+    <!-- Modal personalizado para confirmaciones -->
+    <div id="customModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <span id="modalIcon" class="modal-icon">✅</span>
+            <h3 id="modalTitle" class="modal-title">Operación Exitosa</h3>
+            <p id="modalMessage" class="modal-message">Tu operación se completó correctamente.</p>
+            <div class="modal-buttons">
+                <button id="modalPrimary" class="modal-btn modal-btn-primary" onclick="closeCustomModal()">Entendido</button>
+                <button id="modalSecondary" class="modal-btn modal-btn-secondary" onclick="closeCustomModal()" style="display: none;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="navbar" id="navbar"></div>
     
     <div class="container">
@@ -236,6 +437,118 @@
     </div>
     
     <script>
+        // =========================================================================
+        // SISTEMA DE NOTIFICACIONES PERSONALIZADAS
+        // =========================================================================
+        
+        // Función para mostrar notificaciones tipo toast
+        function showNotification(type, title, message, duration = 4000) {
+            const container = document.getElementById('notificationContainer');
+            
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            // Iconos por tipo
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            notification.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">
+                        ${icons[type]} ${title}
+                    </div>
+                    <button class="notification-close" onclick="closeNotification(this)">×</button>
+                </div>
+                <div class="notification-message">${message}</div>
+            `;
+            
+            // Agregar al contenedor
+            container.appendChild(notification);
+            
+            // Mostrar con animación
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Auto-ocultar después del tiempo especificado
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    closeNotification(notification.querySelector('.notification-close'));
+                }
+            }, duration);
+        }
+        
+        // Cerrar notificación individual
+        function closeNotification(closeBtn) {
+            const notification = closeBtn.closest('.notification');
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+        
+        // Función para mostrar modales de confirmación
+        function showCustomModal(icon, title, message, primaryText = 'Entendido', secondaryText = null, onPrimary = null, onSecondary = null) {
+            const modal = document.getElementById('customModal');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalPrimary = document.getElementById('modalPrimary');
+            const modalSecondary = document.getElementById('modalSecondary');
+            
+            // Configurar contenido
+            modalIcon.textContent = icon;
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalPrimary.textContent = primaryText;
+            
+            // Configurar botón secundario
+            if (secondaryText) {
+                modalSecondary.textContent = secondaryText;
+                modalSecondary.style.display = 'block';
+            } else {
+                modalSecondary.style.display = 'none';
+            }
+            
+            // Configurar callbacks
+            modalPrimary.onclick = () => {
+                if (onPrimary) onPrimary();
+                closeCustomModal();
+            };
+            
+            if (onSecondary) {
+                modalSecondary.onclick = () => {
+                    onSecondary();
+                    closeCustomModal();
+                };
+            }
+            
+            // Mostrar modal
+            modal.classList.add('active');
+        }
+        
+        function closeCustomModal() {
+            document.getElementById('customModal').classList.remove('active');
+        }
+        
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('customModal').addEventListener('click', (e) => {
+            if (e.target.id === 'customModal') {
+                closeCustomModal();
+            }
+        });
+
+        // =========================================================================
+        // APLICACIÓN STOREFLOW CON MENSAJES PERSONALIZADOS
+        // =========================================================================
+        
         // Estado de la aplicación
         let state = {
             inventory: [],
@@ -260,7 +573,6 @@
                 const savedInventory = localStorage.getItem('tiendita_inventory');
                 if (savedInventory) {
                     state.inventory = JSON.parse(savedInventory);
-                    // Trackear carga de inventario existente
                     trackEvent('inventario_cargado', {
                         productos_count: state.inventory.length
                     });
@@ -274,7 +586,8 @@
                         { id: 5, name: 'Huevos San Juan', stock: 30, cost: 35, price: 50, expiry: '2025-07-01' }
                     ];
                     saveInventory();
-                    // Trackear usuario nuevo con productos de ejemplo
+                    showNotification('info', 'Bienvenido a StoreFlow', 
+                        'Hemos cargado productos de ejemplo para que puedas probar la aplicación');
                     trackEvent('productos_ejemplo_cargados', {
                         productos_count: state.inventory.length
                     });
@@ -285,13 +598,14 @@
                 const savedSales = localStorage.getItem('tiendita_sales_' + today);
                 if (savedSales) {
                     state.sales = JSON.parse(savedSales);
-                    // Trackear ventas existentes del día
                     trackEvent('ventas_dia_cargadas', {
                         ventas_count: state.sales.length
                     });
                 }
             } catch (e) {
                 console.error('Error cargando datos:', e);
+                showNotification('error', 'Error de Carga', 
+                    'Hubo un problema cargando tus datos. Se inicializará con productos de ejemplo.');
                 trackEvent('error_carga_datos', {
                     error_message: e.message
                 });
@@ -306,6 +620,8 @@
                 });
             } catch (e) {
                 console.error('Error guardando inventario:', e);
+                showNotification('error', 'Error de Guardado', 
+                    'No se pudo guardar el inventario. Verifica el espacio de almacenamiento.');
                 trackEvent('error_guardar_inventario', {
                     error_message: e.message
                 });
@@ -321,6 +637,8 @@
                 });
             } catch (e) {
                 console.error('Error guardando ventas:', e);
+                showNotification('error', 'Error de Guardado', 
+                    'No se pudieron guardar las ventas del día.');
                 trackEvent('error_guardar_ventas', {
                     error_message: e.message
                 });
@@ -336,10 +654,8 @@
             
             state.currentView = view;
             
-            // Trackear navegación
             trackEvent('vista_navegada', {
-                vista_destino: view,
-                vista_anterior: state.currentView
+                vista_destino: view
             });
             
             if (view === 'sales') {
@@ -386,7 +702,6 @@
                 document.getElementById('calcProfit').textContent = profit.toFixed(2);
                 document.getElementById('calcResult').classList.remove('hide');
                 
-                // Trackear uso de calculadora
                 trackEvent('calculadora_usada', {
                     margen_calculado: margin.toFixed(1),
                     ganancia_calculada: profit.toFixed(2)
@@ -407,7 +722,7 @@
                 .forEach(product => {
                     const option = document.createElement('option');
                     option.value = product.id;
-                    option.textContent = `${product.name} - $${product.price} (${product.stock})`;
+                    option.textContent = `${product.name} - ${product.price} (${product.stock})`;
                     select.appendChild(option);
                 });
         }
@@ -444,7 +759,8 @@
             if (!product) return;
             
             if (product.stock < quantity) {
-                alert('Stock insuficiente');
+                showNotification('error', 'Stock Insuficiente', 
+                    `Solo quedan ${product.stock} unidades de ${product.name}`);
                 trackEvent('error_stock_insuficiente', {
                     producto_id: productId,
                     stock_disponible: product.stock,
@@ -471,12 +787,16 @@
             updateSummary();
             renderSales();
             
-            // Trackear venta registrada
+            // Mostrar notificación de éxito personalizada
+            const ganancia = (sale.price - sale.cost) * quantity;
+            showNotification('success', 'Venta Registrada', 
+                `${quantity} ${product.name} por ${sale.total.toFixed(2)} (Ganancia: ${ganancia.toFixed(2)})`);
+            
             trackEvent('venta_registrada', {
                 producto_nombre: product.name,
                 cantidad: quantity,
                 total_venta: sale.total.toFixed(2),
-                ganancia: ((sale.price - sale.cost) * quantity).toFixed(2)
+                ganancia: ganancia.toFixed(2)
             });
             
             // Limpiar formulario
@@ -485,7 +805,18 @@
             updateSaleTotal();
             updateSaleProductList();
             
-            alert('Venta registrada');
+            // Verificar stock bajo
+            if (product.stock <= 5 && product.stock > 0) {
+                setTimeout(() => {
+                    showNotification('warning', 'Stock Bajo', 
+                        `Quedan solo ${product.stock} unidades de ${product.name}`);
+                }, 1000);
+            } else if (product.stock === 0) {
+                setTimeout(() => {
+                    showNotification('error', 'Producto Agotado', 
+                        `${product.name} se ha agotado completamente`);
+                }, 1000);
+            }
         }
         
         function renderSales() {
@@ -500,7 +831,7 @@
                 <div class="sale-item">
                     <div class="flex-between">
                         <strong>${sale.productName}</strong>
-                        <span>$${sale.total.toFixed(2)}</span>
+                        <span>${sale.total.toFixed(2)}</span>
                     </div>
                     <div style="font-size: 12px; color: #6b7280;">
                         ${sale.quantity} unidades • ${sale.time}
@@ -577,17 +908,37 @@
         }
         
         function deleteProduct(id) {
-            if (confirm('¿Eliminar producto?')) {
-                const product = state.inventory.find(p => p.id === id);
-                state.inventory = state.inventory.filter(p => p.id !== id);
-                saveInventory();
-                renderInventory();
-                
-                trackEvent('producto_eliminado', {
-                    producto_id: id,
-                    producto_nombre: product ? product.name : 'desconocido'
-                });
-            }
+            const product = state.inventory.find(p => p.id === id);
+            if (!product) return;
+            
+            showCustomModal(
+                '🗑️',
+                'Eliminar Producto',
+                `¿Estás seguro de eliminar "${product.name}"? Esta acción no se puede deshacer.`,
+                'Eliminar',
+                'Cancelar',
+                () => {
+                    // Confirmar eliminación
+                    state.inventory = state.inventory.filter(p => p.id !== id);
+                    saveInventory();
+                    renderInventory();
+                    updateSaleProductList();
+                    
+                    showNotification('success', 'Producto Eliminado', 
+                        `${product.name} ha sido eliminado del inventario`);
+                    
+                    trackEvent('producto_eliminado', {
+                        producto_id: id,
+                        producto_nombre: product.name
+                    });
+                },
+                () => {
+                    // Cancelar
+                    trackEvent('eliminacion_producto_cancelada', {
+                        producto_id: id
+                    });
+                }
+            );
         }
         
         function saveProduct(event) {
@@ -596,18 +947,27 @@
             const id = document.getElementById('productId').value;
             const product = {
                 id: id ? parseInt(id) : Date.now(),
-                name: document.getElementById('productName').value,
+                name: document.getElementById('productName').value.trim(),
                 stock: parseInt(document.getElementById('productStock').value),
                 cost: parseFloat(document.getElementById('productCost').value),
                 price: parseFloat(document.getElementById('productPrice').value),
                 expiry: document.getElementById('productExpiry').value
             };
             
+            // Validaciones
+            if (product.price <= product.cost) {
+                showNotification('warning', 'Precio Incorrecto', 
+                    'El precio de venta debe ser mayor al costo');
+                return;
+            }
+            
             if (id) {
                 // Editar
                 const index = state.inventory.findIndex(p => p.id === product.id);
                 if (index !== -1) {
                     state.inventory[index] = product;
+                    showNotification('success', 'Producto Actualizado', 
+                        `${product.name} ha sido actualizado correctamente`);
                     trackEvent('producto_editado', {
                         producto_id: product.id,
                         producto_nombre: product.name
@@ -616,13 +976,16 @@
             } else {
                 // Nuevo
                 if (state.inventory.length >= 50) {
-                    alert('Máximo 50 productos');
+                    showNotification('error', 'Límite Alcanzado', 
+                        'Máximo 50 productos. Elimina algunos productos para agregar nuevos.');
                     trackEvent('limite_productos_alcanzado', {
                         productos_actuales: state.inventory.length
                     });
                     return;
                 }
                 state.inventory.push(product);
+                showNotification('success', 'Producto Agregado', 
+                    `${product.name} se agregó al inventario`);
                 trackEvent('producto_agregado', {
                     producto_id: product.id,
                     producto_nombre: product.name,
@@ -632,6 +995,7 @@
             
             saveInventory();
             renderInventory();
+            updateSaleProductList();
             hideProductModal();
         }
         
@@ -639,18 +1003,27 @@
         function checkMidnight() {
             const now = new Date();
             if (now.getHours() === 0 && now.getMinutes() === 0) {
+                const ventasAyer = state.sales.length;
                 state.sales = [];
                 saveSales();
                 updateSummary();
                 renderSales();
-                trackEvent('nuevo_dia_iniciado');
+                
+                if (ventasAyer > 0) {
+                    showNotification('info', 'Nuevo Día', 
+                        `Registraste ${ventasAyer} ventas ayer. ¡Que tengas un excelente día de ventas!`);
+                }
+                trackEvent('nuevo_dia_iniciado', {
+                    ventas_dia_anterior: ventasAyer
+                });
             }
         }
         
         // Funciones de Backup
         function exportarInventario() {
             if (state.inventory.length === 0) {
-                alert('No hay productos para exportar');
+                showNotification('warning', 'Sin Productos', 
+                    'No hay productos para exportar');
                 trackEvent('backup_sin_productos');
                 return;
             }
@@ -667,7 +1040,8 @@
             // Intentar copiar al portapapeles
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(textoBackup).then(() => {
-                    alert(`✅ Inventario copiado!\n\n${state.inventory.length} productos guardados de StoreFlow.\n\nPégalo en WhatsApp, Notas o cualquier app para guardarlo.`);
+                    showNotification('success', 'Backup Completado', 
+                        `${state.inventory.length} productos copiados al portapapeles. Guárdalo en WhatsApp o Notas.`);
                     trackEvent('backup_exportado_exitoso', {
                         productos_count: state.inventory.length,
                         metodo: 'clipboard'
@@ -692,13 +1066,18 @@
             
             try {
                 document.execCommand('copy');
-                alert('✅ Inventario copiado! Pégalo en un lugar seguro.');
+                showNotification('success', 'Backup Completado', 
+                    'Inventario copiado. Pégalo en un lugar seguro.');
                 trackEvent('backup_exportado_exitoso', {
                     productos_count: state.inventory.length,
                     metodo: 'execCommand'
                 });
             } catch (err) {
-                prompt('Copia este texto manualmente:', texto);
+                showCustomModal('📋', 'Copiar Manualmente', 
+                    'Copia este texto y guárdalo en un lugar seguro:', 'Cerrar');
+                // Mostrar el texto en el modal
+                document.getElementById('modalMessage').innerHTML = 
+                    `<textarea style="width:100%;height:100px;font-size:12px;" readonly>${texto}</textarea>`;
                 trackEvent('backup_exportado_manual', {
                     productos_count: state.inventory.length
                 });
@@ -708,9 +1087,36 @@
         }
         
         function mostrarImportDialog() {
-            const textoBackup = prompt('Pega aquí el texto de tu inventario guardado:');
-            
-            if (!textoBackup) {
+            showCustomModal(
+                '📥',
+                'Restaurar Inventario',
+                'Pega aquí el texto de tu inventario guardado:',
+                'Restaurar',
+                'Cancelar',
+                () => {
+                    // Crear un prompt personalizado usando el modal
+                    const modalMessage = document.getElementById('modalMessage');
+                    modalMessage.innerHTML = `
+                        <textarea id="backupText" placeholder="Pega el texto del backup aquí..." style="width:100%;height:100px;font-size:12px;margin:10px 0;"></textarea>
+                    `;
+                    
+                    const modalPrimary = document.getElementById('modalPrimary');
+                    modalPrimary.textContent = 'Procesar';
+                    modalPrimary.onclick = () => {
+                        const textoBackup = document.getElementById('backupText').value;
+                        procesarImport(textoBackup);
+                    };
+                },
+                () => {
+                    trackEvent('backup_import_cancelado');
+                }
+            );
+        }
+        
+        function procesarImport(textoBackup) {
+            if (!textoBackup.trim()) {
+                showNotification('warning', 'Texto Vacío', 
+                    'Por favor pega el texto del backup');
                 trackEvent('backup_import_cancelado');
                 return;
             }
@@ -722,35 +1128,43 @@
                     throw new Error('Formato inválido');
                 }
                 
-                const confirmacion = confirm(
-                    `¿Restaurar inventario?\n\n` +
-                    `Fecha del backup: ${backup.fecha || 'Desconocida'}\n` +
-                    `Productos a restaurar: ${backup.productos.length}\n\n` +
-                    `⚠️ Esto REEMPLAZARÁ tu inventario actual`
+                showCustomModal(
+                    '⚠️',
+                    'Confirmar Restauración',
+                    `¿Restaurar inventario?\n\nFecha: ${backup.fecha || 'Desconocida'}\nProductos: ${backup.productos.length}\n\n⚠️ Esto REEMPLAZARÁ tu inventario actual`,
+                    'Restaurar',
+                    'Cancelar',
+                    () => {
+                        const productosAntes = state.inventory.length;
+                        state.inventory = backup.productos;
+                        saveInventory();
+                        renderInventory();
+                        updateSaleProductList();
+                        
+                        showNotification('success', 'Inventario Restaurado', 
+                            `${backup.productos.length} productos cargados correctamente`);
+                        
+                        trackEvent('backup_importado_exitoso', {
+                            productos_antes: productosAntes,
+                            productos_despues: backup.productos.length,
+                            fecha_backup: backup.fecha
+                        });
+                        
+                        closeCustomModal();
+                    },
+                    () => {
+                        trackEvent('backup_import_cancelado_confirmacion');
+                        closeCustomModal();
+                    }
                 );
                 
-                if (confirmacion) {
-                    const productosAntes = state.inventory.length;
-                    state.inventory = backup.productos;
-                    saveInventory();
-                    renderInventory();
-                    updateSaleProductList();
-                    alert(`✅ ¡Inventario restaurado!\n\n${backup.productos.length} productos cargados.`);
-                    
-                    trackEvent('backup_importado_exitoso', {
-                        productos_antes: productosAntes,
-                        productos_despues: backup.productos.length,
-                        fecha_backup: backup.fecha
-                    });
-                } else {
-                    trackEvent('backup_import_cancelado_confirmacion');
-                }
-                
             } catch (error) {
-                alert('❌ Error: El texto no es válido.\n\nAsegúrate de copiar TODO el texto del backup.');
+                showNotification('error', 'Backup Inválido', 
+                    'El texto no es válido. Asegúrate de copiar TODO el texto del backup.');
                 trackEvent('backup_import_error', {
                     error_message: error.message
                 });
+                closeCustomModal();
             }
         }
         
@@ -765,7 +1179,7 @@
             const totalProductos = state.inventory.length;
             
             // Crear mensaje
-            const mensaje = `🏪 *Feedback Mi Tiendita*\n\n` +
+            const mensaje = `🏪 *Feedback StoreFlow*\n\n` +
                 `📊 *Mis estadísticas:*\n` +
                 `• Días usando la app: ${diasUso}\n` +
                 `• Productos en inventario: ${totalProductos}\n` +
@@ -789,8 +1203,19 @@
                 total_ventas_hoy: totalVentasHoy.toFixed(2)
             });
             
-            // Abrir WhatsApp
-            window.open(url, '_blank');
+            // Mostrar confirmación antes de abrir WhatsApp
+            showCustomModal(
+                '📱',
+                'Abrir WhatsApp',
+                'Se abrirá WhatsApp con un mensaje prellenado con tus estadísticas. ¿Continuar?',
+                'Abrir WhatsApp',
+                'Cancelar',
+                () => {
+                    window.open(url, '_blank');
+                    showNotification('success', 'WhatsApp Abierto', 
+                        'Gracias por ayudarnos a mejorar StoreFlow');
+                }
+            );
         }
         
         function calcularDiasUso() {
@@ -801,14 +1226,14 @@
                 primerUso = new Date().toISOString();
                 localStorage.setItem('tiendita_primer_uso', primerUso);
                 trackEvent('primer_uso_registrado');
-                return 0;
+                return 1;
             }
             
             // Calcular días transcurridos
             const fechaInicio = new Date(primerUso);
             const fechaHoy = new Date();
             const diferencia = fechaHoy - fechaInicio;
-            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24)) + 1;
             
             return dias;
         }
@@ -936,7 +1361,8 @@
                 link.click();
                 document.body.removeChild(link);
                 
-                alert('📸 ¡Captura guardada!\n\nLa imagen se descargó en tu dispositivo.\nPuedes encontrarla en la carpeta de Descargas.');
+                showNotification('success', 'Captura Guardada', 
+                    'La imagen se descargó correctamente. Búscala en tu carpeta de Descargas.');
                 
                 trackEvent('captura_ventas_exitosa', {
                     ventas_count: state.sales.length,
@@ -959,6 +1385,9 @@
                     </html>
                 `);
                 newWindow.document.close();
+                
+                showNotification('info', 'Captura Abierta', 
+                    'La captura se abrió en una nueva ventana. Haz clic derecho para guardarla.');
                 
                 trackEvent('captura_ventas_exitosa', {
                     ventas_count: state.sales.length,
