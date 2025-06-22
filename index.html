@@ -238,6 +238,164 @@
         
         .modal-btn-danger:hover { background: #dc2626; }
 
+        /* Sistema de apoyo */
+        .support-banner {
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .support-banner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .support-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="hearts" width="30" height="30" patternUnits="userSpaceOnUse"><text x="15" y="20" text-anchor="middle" fill="rgba(255,255,255,0.1)" font-size="16">💝</text></pattern></defs><rect width="100" height="100" fill="url(%23hearts)"/></svg>') repeat;
+        }
+
+        .support-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .support-icon {
+            font-size: 1.5rem;
+        }
+
+        .support-text {
+            flex: 1;
+        }
+
+        .support-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .support-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .support-cta {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .support-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 10003;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .support-modal.active {
+            display: flex;
+        }
+
+        .support-modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: transform 0.2s ease;
+        }
+
+        .support-modal.active .support-modal-content {
+            transform: scale(1);
+        }
+
+        .support-modal-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .support-modal-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+
+        .support-modal-message {
+            color: #6b7280;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .support-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .support-modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .support-modal-btn-primary {
+            background: #10b981;
+            color: white;
+        }
+
+        .support-modal-btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .support-modal-btn-close {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .support-modal-btn:hover {
+            transform: translateY(-1px);
+        }
+
         /* Responsive para móviles */
         @media (max-width: 480px) {
             .notification-container {
@@ -260,7 +418,7 @@
 </head>
 <body>
     <!-- Contenedor para notificaciones -->
-    <div id="notificationContainer" class="notification-container"></div>
+    <div id="notificationContainer" class="notification-container">    </div>
     
     <!-- Modal personalizado para confirmaciones -->
     <div id="customModal" class="custom-modal">
@@ -271,6 +429,38 @@
             <div class="modal-buttons">
                 <button id="modalPrimary" class="modal-btn modal-btn-primary" onclick="closeCustomModal()">Entendido</button>
                 <button id="modalSecondary" class="modal-btn modal-btn-secondary" onclick="closeCustomModal()" style="display: none;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de apoyo al proyecto -->
+    <div id="supportModal" class="support-modal">
+        <div class="support-modal-content">
+            <div class="support-modal-icon">🏪💝</div>
+            <h3 class="support-modal-title">¡Apoya el Proyecto StoreFlow!</h3>
+            <p class="support-modal-message">
+                <strong>StoreFlow es y seguirá siendo 100% gratuito.</strong><br><br>
+                
+                Si quieres apoyar el desarrollo y tienes una tienda física, considera nuestra lona profesional personalizada. 
+                
+                <br><br><strong>Es completamente opcional.</strong> Puedes seguir usando StoreFlow sin comprar nada.
+            </p>
+            <div class="support-modal-buttons">
+                <a href="http://articulo.mercadolibre.com.mx/MLM-2349224933-lona-publicitaria-tienda-abarrotes-diseno-premium-precios-_JM" 
+                   class="support-modal-btn support-modal-btn-primary" 
+                   target="_blank" 
+                   onclick="trackSupportAction('mercado_libre_from_app')">
+                    🛒 Ver Lona
+                </a>
+                <a href="https://wa.me/525564290144?text=Hola%2C%20vi%20StoreFlow%20y%20me%20interesa%20la%20lona%20para%20mi%20tienda" 
+                   class="support-modal-btn support-modal-btn-secondary" 
+                   target="_blank" 
+                   onclick="trackSupportAction('whatsapp_from_app')">
+                    💬 WhatsApp
+                </a>
+                <button class="support-modal-btn support-modal-btn-close" onclick="closeSupportModal()">
+                    Cerrar
+                </button>
             </div>
         </div>
     </div>
@@ -321,6 +511,18 @@
             <button class="btn" onclick="enviarFeedback()" style="margin-top: 16px; background: #25D366; color: white;">
                 💬 Enviar Comentarios por WhatsApp
             </button>
+            
+            <!-- Banner de apoyo discreto -->
+            <div id="supportBanner" class="support-banner" onclick="showSupportModal()">
+                <div class="support-content">
+                    <div class="support-icon">💝</div>
+                    <div class="support-text">
+                        <div class="support-title">¿Te gusta StoreFlow? ¡Apóyanos!</div>
+                        <div class="support-subtitle">Opcional • StoreFlow seguirá siendo gratis</div>
+                    </div>
+                    <div class="support-cta">Ver cómo</div>
+                </div>
+            </div>
         </div>
         
         <!-- Vista de Ventas -->
@@ -817,6 +1019,9 @@
                         `${product.name} se ha agotado completamente`);
                 }, 1000);
             }
+            
+            // Mostrar apoyo después de ciertos éxitos
+            showSupportAfterSuccess();
         }
         
         function renderSales() {
